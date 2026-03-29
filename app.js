@@ -905,7 +905,7 @@
       btn.addEventListener('click', () => {
         group.querySelectorAll('.checkin-option-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
-        checkinState[field] = parseInt(btn.dataset.value, 10);
+        checkinState[field] = parseFloat(btn.dataset.value);
         if (navigator.vibrate) navigator.vibrate(30);
       });
     });
