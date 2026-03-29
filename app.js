@@ -766,7 +766,9 @@
     condition: null,
     mood: null,
     exercise: null,
-    diet: null,
+    diet_base: null,
+    diet_alcohol: false,
+    diet_snack: false,
     stress: null
   };
 
@@ -848,7 +850,10 @@
 
   function resetCheckinForm() {
     // Reset state
-    Object.keys(checkinState).forEach(k => checkinState[k] = null);
+    Object.keys(checkinState).forEach(k => {
+      if (k === 'diet_alcohol' || k === 'diet_snack') checkinState[k] = false;
+      else checkinState[k] = null;
+    });
 
     // Reset inputs
     const weightInput = document.getElementById('checkin-weight-raw');
@@ -898,16 +903,29 @@
     });
   });
 
-  // Option button handlers (exercise, diet, stress)
+  // Option button handlers
   document.querySelectorAll('.checkin-option-group').forEach(group => {
     const field = group.dataset.field;
+    if (!field) return;
     group.querySelectorAll('.checkin-option-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         group.querySelectorAll('.checkin-option-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
-        checkinState[field] = parseFloat(btn.dataset.value);
+        let val = btn.dataset.value;
+        const numVal = parseFloat(val);
+        checkinState[field] = isNaN(numVal) ? val : numVal;
         if (navigator.vibrate) navigator.vibrate(30);
       });
+    });
+  });
+
+  // Toggle button handlers (複数選択)
+  document.querySelectorAll('.checkin-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('selected');
+      const toggleField = 'diet_' + btn.dataset.toggle;
+      checkinState[toggleField] = btn.classList.contains('selected');
+      if (navigator.vibrate) navigator.vibrate(30);
     });
   });
 
