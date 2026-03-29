@@ -16,6 +16,43 @@
   const SPECIAL_KEY = 'resist_special';
   const WINS_PER_TICKET = 10; // 勝利N回でチケット1枚
 
+  // ---- Sync (Google Apps Script) ----
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyN7Pob4WdTngwJgLspbCbT3iumeA2qss0OmBB0u0bWP7qHt1ntLUbwnfjSjXfJrJeE/exec';
+  const SYNC_QUEUE_KEY = 'resist_sync_queue';
+
+  function syncToGas(type, payload) {
+    const item = { type, payload, id: Date.now() + Math.random() };
+    let queue = [];
+    try { queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY)) || []; } catch(e) {}
+    queue.push(item);
+    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+    flushSyncQueue();
+  }
+
+  async function flushSyncQueue() {
+    if (!navigator.onLine) return;
+    let queue = [];
+    try { queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY)) || []; } catch(e) {}
+    if (queue.length === 0) return;
+
+    const item = queue[0];
+    try {
+      await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ type: item.type, payload: item.payload })
+      });
+      queue.shift();
+      localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+      if (queue.length > 0) flushSyncQueue();
+    } catch (err) {
+      console.error('GAS Sync failed:', err);
+    }
+  }
+
+  window.addEventListener('online', flushSyncQueue);
+  setTimeout(flushSyncQueue, 2000);
+
   // ---- Badge Definitions ----
   const BADGE_DEFS = [
     { id: 'first_win',    icon: '🌱', name: '最初の一歩',      desc: '初めて食欲に勝った！',         cond: (v,s,w) => v >= 1 },
@@ -127,8 +164,10 @@
 
   function saveVictory(craving, durationSec) {
     const v = getVictories();
-    v.push({ date: new Date().toISOString(), craving, duration: durationSec });
+    const entry = { date: new Date().toISOString(), craving, duration: durationSec };
+    v.push(entry);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(v));
+    syncToGas('victory', entry);
   }
 
   function getTodayStr() {
@@ -241,6 +280,7 @@
       if (badge.cond(total, streak, wCount, wDiff)) {
         earned.push(badge.id);
         newBadges.push(badge);
+        syncToGas('badge', { date: new Date().toISOString(), badgeId: badge.id });
       }
     });
 
@@ -789,6 +829,7 @@
     if (existing >= 0) checkins[existing] = entry; else checkins.push(entry);
     checkins.sort((a, b) => a.date.localeCompare(b.date));
     localStorage.setItem(CHECKIN_KEY, JSON.stringify(checkins));
+    syncToGas('checkin', entry);
 
     // Also save weight to weight system for chart compatibility
     if (data.weight) {
