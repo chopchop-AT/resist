@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0e1a">
+  <title>RESIST - 食欲撃退</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== HOME SCREEN ===== -->
+  <div id="screen-home" class="screen active">
+    <div class="home-header">
+      <div class="app-title">RESIST</div>
+      <div class="app-subtitle">食欲に、負けない。</div>
+    </div>
+
+    <div id="home-latest-badge" class="home-badge-preview" style="display:none">
+      <span id="home-badge-icon"></span>
+      <span id="home-badge-name"></span>
+    </div>
+
+    <div class="today-stats">
+      <div class="stat-card">
+        <span class="stat-number" id="today-wins">0</span>
+        <span class="stat-label">今日の勝利</span>
+      </div>
+      <div class="stat-card streak-card">
+        <span class="stat-number" id="current-streak">0</span>
+        <span class="stat-label">連続日数</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number" id="total-wins">0</span>
+        <span class="stat-label">通算勝利</span>
+      </div>
+    </div>
+
+    <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+      <button class="sos-button" id="btn-sos">
+        <div class="sos-pulse"></div>
+        <div class="sos-pulse sos-pulse-2"></div>
+        <div class="sos-inner">
+          <span class="sos-icon">🚨</span>
+          <span class="sos-text">SOS</span>
+          <span class="sos-sub">食べたい衝動が来たら</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- Special Day Ticket -->
+    <div class="special-day-card">
+      <div class="special-day-left">
+        <span class="special-day-icon">🎫</span>
+        <div>
+          <div class="special-day-title">スペシャルデイ権</div>
+          <div class="special-day-sub">あと<span id="wins-to-next">10</span>勝で次のチケット</div>
+        </div>
+      </div>
+      <div class="special-day-right">
+        <span class="special-day-count" id="special-day-count">0</span>
+        <span class="special-day-unit">枚</span>
+      </div>
+    </div>
+    <div class="special-progress-wrap">
+      <div class="special-progress-bar" id="special-progress-bar" style="width:0%"></div>
+    </div>
+    <button class="use-ticket-btn" id="btn-use-ticket" style="display:none">🎉 スペシャルデイを使う</button>
+  </div>
+
+  <!-- ===== SOS SCREEN ===== -->
+  <div id="screen-sos" class="screen">
+    <div class="sos-screen-bg"></div>
+    <div class="sos-content">
+      <button class="back-btn" id="btn-back-sos">✕</button>
+
+      <div class="timer-container">
+        <svg class="timer-ring" viewBox="0 0 200 200">
+          <circle class="timer-ring-bg" cx="100" cy="100" r="90"/>
+          <circle class="timer-ring-progress" id="timer-progress" cx="100" cy="100" r="90"/>
+        </svg>
+        <div class="timer-display">
+          <span class="timer-minutes" id="timer-minutes">15</span>
+          <span class="timer-separator">:</span>
+          <span class="timer-seconds" id="timer-seconds">00</span>
+        </div>
+        <div class="timer-message">衝動は必ず過ぎ去る</div>
+      </div>
+
+      <div class="reality-box" id="reality-box">
+        <span class="reality-icon">💀</span>
+        <div class="reality-message" id="reality-message"></div>
+      </div>
+
+      <div class="breathing-guide">
+        <div class="breathing-circle"></div>
+        <div class="breathing-text" id="breathing-text">吸って…</div>
+      </div>
+
+      <button class="victory-button" id="btn-victory">
+        <span class="victory-icon">✊</span>
+        食べなかった！勝利宣言
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== CHECKIN SCREEN (v3 NEW) ===== -->
+  <div id="screen-checkin" class="screen">
+    <div class="checkin-header">
+      <div class="checkin-greeting" id="checkin-greeting">☀️ おはようございます</div>
+      <div class="checkin-subtitle">朝のチェックイン</div>
+    </div>
+
+    <div class="checkin-scroll">
+      <!-- 既に記録済みの場合 -->
+      <div id="checkin-done-message" class="checkin-done-msg" style="display:none">
+        <span class="checkin-done-icon">✅</span>
+        <div class="checkin-done-text">今日のチェックインは完了しています</div>
+        <button class="checkin-redo-btn" id="btn-checkin-redo">記録し直す</button>
+      </div>
+
+      <div id="checkin-form">
+        <!-- 体重（3桁スマート入力） -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">⚖️ 体重</div>
+          <div class="checkin-weight-card">
+            <input type="tel" id="checkin-weight-raw" class="checkin-weight-input" placeholder="855" maxlength="4" inputmode="numeric">
+            <div class="checkin-weight-display" id="checkin-weight-display">-- kg</div>
+            <div class="checkin-weight-hint">3桁入力 → 自動変換（855→85.5kg）</div>
+          </div>
+        </div>
+
+        <!-- 睡眠 -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🛏️ 睡眠</div>
+
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">就寝時刻</div>
+            <div class="checkin-row" style="display:flex;">
+              <div class="checkin-option-group" data-field="bedtime" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:8px; width:100%;">
+                <button class="checkin-option-btn" data-value="21" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">21時</button>
+                <button class="checkin-option-btn" data-value="22" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">22時</button>
+                <button class="checkin-option-btn" data-value="23" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">23時</button>
+                <button class="checkin-option-btn" data-value="0" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">0時</button>
+                <button class="checkin-option-btn" data-value="1" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">1時〜</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group" style="margin-top:16px;">
+            <div class="checkin-rating-label">睡眠時間</div>
+            <div class="checkin-row" style="display:flex;">
+              <div class="checkin-option-group" data-field="sleepHours" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:8px; width:100%;">
+                <button class="checkin-option-btn" data-value="5" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">5h</button>
+                <button class="checkin-option-btn" data-value="6" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">6h</button>
+                <button class="checkin-option-btn" data-value="7" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">7h</button>
+                <button class="checkin-option-btn" data-value="8" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">8h</button>
+                <button class="checkin-option-btn" data-value="9" style="flex:1; padding:10px 4px; font-size:0.9rem; min-width:40px;">9h+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 睡眠の質・体調・気分（5段階絵文字） -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">😊 コンディション</div>
+
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">睡眠の質</div>
+            <div class="checkin-emoji-row" data-field="sleepQuality">
+              <button class="checkin-emoji-btn" data-value="1">😖</button>
+              <button class="checkin-emoji-btn" data-value="2">😞</button>
+              <button class="checkin-emoji-btn" data-value="3">😐</button>
+              <button class="checkin-emoji-btn" data-value="4">🙂</button>
+              <button class="checkin-emoji-btn" data-value="5">😊</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">体調</div>
+            <div class="checkin-emoji-row" data-field="condition">
+              <button class="checkin-emoji-btn" data-value="1">😖</button>
+              <button class="checkin-emoji-btn" data-value="2">😞</button>
+              <button class="checkin-emoji-btn" data-value="3">😐</button>
+              <button class="checkin-emoji-btn" data-value="4">🙂</button>
+              <button class="checkin-emoji-btn" data-value="5">😊</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">気分</div>
+            <div class="checkin-emoji-row" data-field="mood">
+              <button class="checkin-emoji-btn" data-value="1">😖</button>
+              <button class="checkin-emoji-btn" data-value="2">😞</button>
+              <button class="checkin-emoji-btn" data-value="3">😐</button>
+              <button class="checkin-emoji-btn" data-value="4">🙂</button>
+              <button class="checkin-emoji-btn" data-value="5">😊</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 行動チェック（運動） -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🏃 昨日の運動</div>
+          <div class="checkin-option-group" data-field="exercise">
+            <button class="checkin-option-btn" data-value="0">💤 ゼロ</button>
+            <button class="checkin-option-btn" data-value="1">🏃 どちらかのみ</button>
+            <button class="checkin-option-btn" data-value="2">🏃🧘 朝ウォーク+夜ストレッチ</button>
+          </div>
+        </div>
+
+        <!-- 行動チェック（食事） -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🍽️ 昨日の食事</div>
+          <div class="checkin-option-group" data-field="diet">
+            <button class="checkin-option-btn" data-value="1">🍺 外食/アルコール</button>
+            <button class="checkin-option-btn" data-value="2">🍽 外食/間食</button>
+            <button class="checkin-option-btn" data-value="3">🏠 由香ごはんのみ</button>
+          </div>
+        </div>
+
+        <!-- ストレス -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🧠 今日のストレス予測</div>
+          <div class="checkin-option-group" data-field="stress">
+            <button class="checkin-option-btn" data-value="1">🔥 多忙</button>
+            <button class="checkin-option-btn" data-value="2">⚖️ 平常</button>
+            <button class="checkin-option-btn" data-value="3">🌿 余白あり</button>
+          </div>
+        </div>
+
+        <!-- 保存ボタン -->
+        <button class="checkin-save-btn" id="btn-checkin-save">
+          ✅ チェックイン完了
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WEIGHT SCREEN ===== -->
+  <div id="screen-weight" class="screen">
+    <div class="home-header">
+      <div class="app-title" style="font-size:1.5rem">⚖️ 体重記録</div>
+    </div>
+
+    <div class="weight-input-section">
+      <div class="weight-input-card">
+        <div class="weight-input-label">今日の体重を記録</div>
+        <div class="weight-input-row">
+          <button class="weight-adjust-btn" id="btn-weight-minus">−</button>
+          <div class="weight-display-wrap">
+            <input type="number" step="0.1" class="weight-input" id="weight-input" value="80.0">
+            <span class="weight-unit">kg</span>
+          </div>
+          <button class="weight-adjust-btn" id="btn-weight-plus">＋</button>
+        </div>
+        <button class="weight-save-btn" id="btn-save-weight">記録する</button>
+      </div>
+    </div>
+
+    <div class="weight-summary" id="weight-summary" style="display:none">
+      <div class="weight-stat-card">
+        <span class="weight-stat-num" id="w-current">--</span>
+        <span class="weight-stat-lbl">最新</span>
+      </div>
+      <div class="weight-stat-card highlight-diff" id="w-diff-card">
+        <span class="weight-stat-num" id="w-diff">--</span>
+        <span class="weight-stat-lbl">増減</span>
+      </div>
+      <div class="weight-stat-card">
+        <span class="weight-stat-num" id="w-records">0</span>
+        <span class="weight-stat-lbl">記録数</span>
+      </div>
+    </div>
+
+    <div class="weight-chart-section">
+      <div class="weight-chart-container">
+        <canvas id="weight-chart"></canvas>
+        <div class="weight-chart-empty" id="weight-chart-empty" style="display:flex">2日以上記録すると<br>グラフが表示されます</div>
+      </div>
+    </div>
+
+    <div class="recent-wins-section">
+      <div class="section-title">📋 記録履歴</div>
+      <div id="weight-history-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== HISTORY / BADGE SCREEN ===== -->
+  <div id="screen-history" class="screen">
+    <div class="history-header">
+      <div class="history-title">🏅 記録 & バッジ</div>
+    </div>
+
+    <div class="history-stats">
+      <div class="history-stat">
+        <span class="history-stat-number" id="hist-total">0</span>
+        <span class="history-stat-label">通算勝利</span>
+      </div>
+      <div class="history-stat highlight">
+        <span class="history-stat-number" id="hist-streak">0</span>
+        <span class="history-stat-label">連続日数</span>
+      </div>
+      <div class="history-stat">
+        <span class="history-stat-number" id="hist-week">0</span>
+        <span class="history-stat-label">今週</span>
+      </div>
+    </div>
+
+    <div class="badges-section">
+      <div class="section-title">🏆 バッジコレクション</div>
+      <div class="badges-grid" id="badges-grid"></div>
+    </div>
+
+    <div class="heatmap-section">
+      <div class="section-title">📅 直近28日の活動</div>
+      <div class="heatmap-container" id="heatmap-container"></div>
+      <div class="heatmap-legend">
+        <span class="legend-label">少</span>
+        <div class="legend-cell" style="opacity:0.2"></div>
+        <div class="legend-cell" style="opacity:0.5"></div>
+        <div class="legend-cell" style="opacity:0.8"></div>
+        <div class="legend-cell" style="opacity:1"></div>
+        <span class="legend-label">多</span>
+      </div>
+    </div>
+
+    <div class="recent-wins-section">
+      <div class="section-title">🕐 最近の勝利</div>
+      <div class="recent-wins-list" id="recent-wins-list"></div>
+    </div>
+
+    <div class="special-history-section">
+      <div class="section-title">🎫 スペシャルデイ履歴</div>
+      <div id="special-history-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM NAVIGATION ===== -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-screen="home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">ホーム</span>
+    </button>
+    <button class="nav-btn" data-screen="checkin">
+      <span class="nav-icon">☀️</span>
+      <span class="nav-label">チェックイン</span>
+    </button>
+    <button class="nav-btn" data-screen="weight">
+      <span class="nav-icon">⚖️</span>
+      <span class="nav-label">体重</span>
+    </button>
+    <button class="nav-btn" data-screen="history">
+      <span class="nav-icon">🏅</span>
+      <span class="nav-label">記録</span>
+    </button>
+  </nav>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- Craving Select Modal -->
+  <div class="modal" id="modal-craving">
+    <div class="modal-content">
+      <div class="modal-title">何に勝った？</div>
+      <div class="craving-options">
+        <button class="craving-btn" data-craving="カップラーメン">🍜 カップラーメン</button>
+        <button class="craving-btn" data-craving="ハンバーガー">🍔 ハンバーガー</button>
+        <button class="craving-btn" data-craving="フライドチキン">🍗 フライドチキン</button>
+        <button class="craving-btn" data-craving="スナック菓子">🍿 スナック菓子</button>
+        <button class="craving-btn" data-craving="甘いもの">🍰 甘いもの</button>
+        <button class="craving-btn" data-craving="ラーメン">🍜 ラーメン</button>
+        <button class="craving-btn" data-craving="揚げ物">🍟 揚げ物</button>
+        <button class="craving-btn" data-craving="炭酸飲料">🥤 炭酸飲料</button>
+      </div>
+      <div class="custom-craving">
+        <input type="text" id="custom-craving-input" placeholder="その他（自由入力）">
+        <button class="craving-btn custom-submit" id="btn-custom-craving">送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badge Unlock Modal -->
+  <div class="modal" id="modal-badge">
+    <div class="modal-content badge-modal-content">
+      <div class="badge-unlock-glow"></div>
+      <div class="badge-unlock-icon" id="new-badge-icon"></div>
+      <div class="badge-unlock-title">バッジ獲得！</div>
+      <div class="badge-unlock-name" id="new-badge-name"></div>
+      <div class="badge-unlock-desc" id="new-badge-desc"></div>
+      <button class="victory-close-btn" id="btn-badge-close" style="margin-top:20px">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Special Day Modal -->
+  <div class="modal" id="modal-special">
+    <div class="modal-content">
+      <div class="modal-title">🎉 スペシャルデイを使う</div>
+      <div class="modal-subtitle">誰とどんな食事を楽しみますか？<br>大切な人との特別な時間を記録しましょう。</div>
+      <textarea class="special-note-input" id="special-note-input" rows="3" placeholder="例：教え子たちとの卒業お祝いランチ"></textarea>
+      <div class="special-modal-actions">
+        <button class="special-cancel-btn" id="btn-special-cancel">やめる</button>
+        <button class="special-confirm-btn" id="btn-special-confirm">🎫 使う！</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Effect -->
+  <div class="victory-effect" id="victory-effect">
+    <div class="victory-celebration">
+      <div class="victory-emoji">🎉</div>
+      <div class="victory-title">VICTORY!</div>
+      <div class="victory-detail" id="victory-detail"></div>
+      <div class="victory-streak-msg" id="victory-streak-msg"></div>
+      <button class="victory-close-btn" id="btn-victory-close">ホームに戻る</button>
+    </div>
+  </div>
+
+  <!-- Special Day Effect -->
+  <div class="victory-effect" id="special-effect">
+    <div class="victory-celebration">
+      <div class="victory-emoji">🎊</div>
+      <div class="victory-title">SPECIAL DAY!</div>
+      <div class="victory-detail" id="special-effect-note"></div>
+      <div class="victory-streak-msg">素敵な時間を楽しんでください！</div>
+      <button class="victory-close-btn" id="btn-special-effect-close">ホームに戻る</button>
+    </div>
+  </div>
+
+  <!-- Checkin Success Effect -->
+  <div class="victory-effect" id="checkin-effect">
+    <div class="victory-celebration">
+      <div class="victory-emoji">🌅</div>
+      <div class="victory-title">CHECK IN!</div>
+      <div class="victory-detail" id="checkin-effect-detail">今日も自分と向き合えた！</div>
+      <div class="victory-streak-msg" id="checkin-effect-streak"></div>
+      <button class="victory-close-btn" id="btn-checkin-effect-close">ホームに戻る</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
