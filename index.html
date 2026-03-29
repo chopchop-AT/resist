@@ -6,12 +6,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a0e1a">
-  <title>RESIST - 食欲撃退</title>
+  <title>RESIST - 生命エネルギー最適化</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -19,7 +21,7 @@
   <div id="screen-home" class="screen active">
     <div class="home-header">
       <div class="app-title">RESIST</div>
-      <div class="app-subtitle">食欲に、負けない。</div>
+      <div class="app-subtitle">食欲と疲労に、負けない。</div>
     </div>
 
     <div id="home-latest-badge" class="home-badge-preview" style="display:none">
@@ -110,25 +112,25 @@
     </div>
   </div>
 
-  <!-- ===== CHECKIN SCREEN (v3 NEW) ===== -->
+  <!-- ===== CHECKIN SCREEN (MORNING) ===== -->
   <div id="screen-checkin" class="screen">
     <div class="checkin-header">
       <div class="checkin-greeting" id="checkin-greeting">☀️ おはようございます</div>
-      <div class="checkin-subtitle">朝のチェックイン</div>
+      <div class="checkin-subtitle">朝のリカバリーチェック</div>
     </div>
 
     <div class="checkin-scroll">
       <!-- 既に記録済みの場合 -->
       <div id="checkin-done-message" class="checkin-done-msg" style="display:none">
         <span class="checkin-done-icon">✅</span>
-        <div class="checkin-done-text">今日のチェックインは完了しています</div>
+        <div class="checkin-done-text">今朝のチェックインは完了しています</div>
         <button class="checkin-redo-btn" id="btn-checkin-redo">記録し直す</button>
       </div>
 
       <div id="checkin-form">
-        <!-- 体重（3桁スマート入力） -->
+        <!-- 体重 -->
         <div class="checkin-section">
-          <div class="checkin-section-title">⚖️ 体重</div>
+          <div class="checkin-section-title">⚖️ 今朝の体重</div>
           <div class="checkin-weight-card">
             <input type="tel" id="checkin-weight-raw" class="checkin-weight-input" placeholder="855" maxlength="4" inputmode="numeric">
             <div class="checkin-weight-display" id="checkin-weight-display">-- kg</div>
@@ -136,27 +138,10 @@
           </div>
         </div>
 
-        <!-- 睡眠 -->
+        <!-- 睡眠・CPAP -->
         <div class="checkin-section">
-          <div class="checkin-section-title">🌙 睡眠リズム</div>
-
+          <div class="checkin-section-title">🌙 睡眠とCPAP装着</div>
           <div class="checkin-rating-group">
-            <div class="checkin-rating-label">就寝時刻</div>
-            <div class="checkin-row">
-              <div class="checkin-option-group" data-field="bedtime" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; width:100%;">
-                <button class="checkin-option-btn" data-value="22" style="padding:0; min-height:44px; font-size:0.85rem;">22時</button>
-                <button class="checkin-option-btn" data-value="22.5" style="padding:0; min-height:44px; font-size:0.85rem;">22時半</button>
-                <button class="checkin-option-btn" data-value="23" style="padding:0; min-height:44px; font-size:0.85rem;">23時</button>
-                <button class="checkin-option-btn" data-value="23.5" style="padding:0; min-height:44px; font-size:0.85rem;">23時半</button>
-                <button class="checkin-option-btn" data-value="0" style="padding:0; min-height:44px; font-size:0.85rem;">0時</button>
-                <button class="checkin-option-btn" data-value="0.5" style="padding:0; min-height:44px; font-size:0.85rem;">0時半</button>
-                <button class="checkin-option-btn" data-value="1" style="padding:0; min-height:44px; font-size:0.85rem;">1時</button>
-                <button class="checkin-option-btn" data-value="1.5" style="padding:0; min-height:44px; font-size:0.85rem;">1時半〜</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="checkin-rating-group" style="margin-top:16px;">
             <div class="checkin-rating-label">睡眠時間</div>
             <div class="checkin-row">
               <div class="checkin-option-group" data-field="sleepHours" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; width:100%;">
@@ -170,87 +155,114 @@
                 <button class="checkin-option-btn" data-value="8" style="padding:0; min-height:44px; font-size:0.85rem;">8h+</button>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- 睡眠の質・体調・気分（5段階絵文字） -->
-        <div class="checkin-section">
-          <div class="checkin-section-title">🔋 今日のエネルギー</div>
-
-          <div class="checkin-rating-group">
-            <div class="checkin-rating-label">目覚めのスッキリ感</div>
-            <div class="checkin-emoji-row" data-field="sleepQuality">
-              <button class="checkin-emoji-btn" data-value="1">😖</button>
-              <button class="checkin-emoji-btn" data-value="2">😞</button>
-              <button class="checkin-emoji-btn" data-value="3">😐</button>
-              <button class="checkin-emoji-btn" data-value="4">🙂</button>
-              <button class="checkin-emoji-btn" data-value="5">😊</button>
-            </div>
-          </div>
-
-          <div class="checkin-rating-group">
-            <div class="checkin-rating-label">からだの軽さ (腰の調子)</div>
-            <div class="checkin-emoji-row" data-field="condition">
-              <button class="checkin-emoji-btn" data-value="1">😖</button>
-              <button class="checkin-emoji-btn" data-value="2">😞</button>
-              <button class="checkin-emoji-btn" data-value="3">😐</button>
-              <button class="checkin-emoji-btn" data-value="4">🙂</button>
-              <button class="checkin-emoji-btn" data-value="5">😊</button>
-            </div>
-          </div>
-
-          <div class="checkin-rating-group">
-            <div class="checkin-rating-label">こころの晴れ具合</div>
-            <div class="checkin-emoji-row" data-field="mood">
-              <button class="checkin-emoji-btn" data-value="1">😖</button>
-              <button class="checkin-emoji-btn" data-value="2">😞</button>
-              <button class="checkin-emoji-btn" data-value="3">😐</button>
-              <button class="checkin-emoji-btn" data-value="4">🙂</button>
-              <button class="checkin-emoji-btn" data-value="5">😊</button>
+            
+            <div class="checkin-rating-label" style="margin-top:16px;">CPAP装着できた？</div>
+            <div class="checkin-option-group" data-field="cpap" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <button class="checkin-option-btn" data-value="1">✅ バッチリ装着</button>
+              <button class="checkin-option-btn" data-value="0">❌ 外してしまった</button>
             </div>
           </div>
         </div>
 
-        <!-- 行動チェック（運動） -->
+        <!-- 疲労と痛み (VAS) -->
         <div class="checkin-section">
-          <div class="checkin-section-title">🛠️ ボディメンテ行動</div>
-          <div class="checkin-option-group" data-field="exercise" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <button class="checkin-option-btn" data-value="0" style="padding:12px; font-size:0.9rem;">💤 まったく<br>していない</button>
-            <button class="checkin-option-btn" data-value="1" style="padding:12px; font-size:0.9rem;">🚶‍♂️ 朝ウォーク<br>のみ</button>
-            <button class="checkin-option-btn" data-value="1" style="padding:12px; font-size:0.9rem;">🧘‍♂️ 夜ストレッチ<br>のみ</button>
-            <button class="checkin-option-btn" data-value="2" style="padding:12px; font-size:0.9rem;">🚶‍♂️+🧘‍♂️ 両方<br>コンプリート！</button>
+          <div class="checkin-section-title">📊 疲労と痛みの定点観測 (VAS)</div>
+          
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">今朝の疲労度・気力</div>
+            <div class="vas-container">
+              <input type="range" class="vas-slider" id="vas-fatigue" min="0" max="100" value="50">
+              <div class="vas-labels">
+                <span>絶好調✨</span>
+                <span id="vas-fatigue-val">50</span>
+                <span>完全に枯渇💀</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">腰・膝の痛み</div>
+            <div class="vas-container">
+              <input type="range" class="vas-slider" id="vas-pain" min="0" max="100" value="50">
+              <div class="vas-labels">
+                <span>全く痛まない🌿</span>
+                <span id="vas-pain-val">50</span>
+                <span>激しく痛む🔥</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- 行動チェック（食事） -->
+        <!-- 前夜の休養行動タグ (複数選択) -->
         <div class="checkin-section">
-          <div class="checkin-section-title">🍽️ 食事コントロール</div>
-          <div class="checkin-rating-label" style="font-size:0.8rem; margin-bottom:8px; opacity:0.8;">ベースの夕食 (択一)</div>
-          <div class="checkin-option-group" data-field="diet_base" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
-            <button class="checkin-option-btn" data-value="yuka" style="padding:12px 0;">🏠 由香ごはん</button>
-            <button class="checkin-option-btn" data-value="out" style="padding:12px 0;">🍽 外食・その他</button>
+          <div class="checkin-section-title">💡 昨晩の休養アクション (複数選択OK)</div>
+          <div class="checkin-tags-grid">
+            <!-- Detachment / Niksen / Detox / Drama -->
+            <button class="checkin-tag-btn" data-tag="スマホ断ち">📱 スマホ断ち</button>
+            <button class="checkin-tag-btn" data-tag="半身浴">🛀 ぬるめ半身浴</button>
+            <button class="checkin-tag-btn" data-tag="由香ごはん">🍲 由香ごはん</button>
+            <button class="checkin-tag-btn" data-tag="何もしない">💭 何もしない時間</button>
+            <button class="checkin-tag-btn" data-tag="有意義な対話">🗣 家族との対話</button>
+            <button class="checkin-tag-btn" data-tag="自然な睡眠">🌙 熟睡できた</button>
+            <button class="checkin-tag-btn" data-tag="趣味の没頭">🎨 趣味・学び</button>
+            <button class="checkin-tag-btn" data-tag="恩送り">🎁 利他的な行動</button>
+          </div>
+        </div>
+
+        <button class="checkin-save-btn" id="btn-checkin-save">✅ 朝のチェックイン完了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CHECKOUT SCREEN (EVENING) ===== -->
+  <div id="screen-checkout" class="screen">
+    <div class="checkin-header">
+      <div class="checkin-greeting">🌙 お疲れ様でした</div>
+      <div class="checkin-subtitle">帰宅中のパフォーマンス記録</div>
+    </div>
+
+    <div class="checkin-scroll">
+      <div id="checkout-done-message" class="checkin-done-msg" style="display:none">
+        <span class="checkin-done-icon">✅</span>
+        <div class="checkin-done-text">今日のチェックアウトは完了しています。ゆっくり休みましょう！</div>
+        <button class="checkin-redo-btn" id="btn-checkout-redo">修正する</button>
+      </div>
+
+      <div id="checkout-form">
+        <!-- パフォーマンス (VAS) -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">📈 今日の総括 (パフォーマンス)</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label" style="font-size:0.85rem">今日の仕事の出来、全体的な充実感はどうでしたか？<br>（この数値がAIのリセット方程式分析に使われます）</div>
+            <div class="vas-container" style="margin-top:20px;">
+              <input type="range" class="vas-slider slider-green" id="vas-performance" min="0" max="100" value="50">
+              <div class="vas-labels">
+                <span>最悪・不完全燃焼📉</span>
+                <span id="vas-performance-val">50</span>
+                <span>最高の出来・充実🚀</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 帰宅・バッファ -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🚆 終業リチュアル</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">仕事モードから完全にログアウトできましたか？</div>
+            <div class="checkin-option-group" data-field="detached_evening" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <button class="checkin-option-btn checkout-opt" data-value="1" style="text-align:center">✅ 完全にオフ！</button>
+              <button class="checkin-option-btn checkout-opt" data-value="0" style="text-align:center">🤔 まだ仕事脳</button>
+            </div>
           </div>
           
-          <div class="checkin-rating-label" style="font-size:0.8rem; margin-bottom:8px; opacity:0.8;">追加の誘惑 (複数選択OK)</div>
-          <div class="checkin-toggle-group" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <button class="checkin-toggle-btn checkin-option-btn" data-toggle="alcohol" style="padding:12px 0;">🍺 アルコール</button>
-            <button class="checkin-toggle-btn checkin-option-btn" data-toggle="snack" style="padding:12px 0;">🍿 間食・夜食</button>
+          <div class="checkout-message-box">
+            天満橋から南森町までの間、少しだけ目を閉じて深呼吸してみましょう。ここからは完全に「あなたの時間」です。
           </div>
         </div>
 
-        <!-- ストレス -->
-        <div class="checkin-section">
-          <div class="checkin-section-title">🌊 今日の負荷予測 (波)</div>
-          <div class="checkin-option-group" data-field="stress">
-            <button class="checkin-option-btn" data-value="1">🔥 多忙</button>
-            <button class="checkin-option-btn" data-value="2">⚖️ 平常</button>
-            <button class="checkin-option-btn" data-value="3">🌿 余白あり</button>
-          </div>
-        </div>
-
-        <!-- 保存ボタン -->
-        <button class="checkin-save-btn" id="btn-checkin-save">
-          ✅ チェックイン完了
+        <button class="checkin-save-btn" id="btn-checkout-save" style="background: linear-gradient(135deg, #60a5fa, #3b82f6);">
+          🚪 仕事からログアウト (保存)
         </button>
       </div>
     </div>
@@ -299,59 +311,70 @@
       </div>
     </div>
 
-    <div class="recent-wins-section">
-      <div class="section-title">📋 記録履歴</div>
+    <div class="recent-wins-section" style="margin-top:20px;">
+      <div class="section-title">📋 体重記録履歴</div>
       <div id="weight-history-list"></div>
     </div>
   </div>
 
-  <!-- ===== HISTORY / BADGE SCREEN ===== -->
-  <div id="screen-history" class="screen">
+  <!-- ===== ANALYTICS / HISTORY SCREEN ===== -->
+  <div id="screen-analytics" class="screen">
     <div class="history-header">
-      <div class="history-title">🏅 記録 & バッジ</div>
+      <div class="history-title">📊 分析と記録</div>
+      <div class="checkin-subtitle">直近7日間のデータに基づくインサイト</div>
     </div>
 
-    <div class="history-stats">
-      <div class="history-stat">
-        <span class="history-stat-number" id="hist-total">0</span>
-        <span class="history-stat-label">通算勝利</span>
+    <div class="checkin-scroll">
+      
+      <!-- AI Reset Formula -->
+      <div class="analytics-section">
+        <div class="section-title" style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:1.2rem">🤖</span> AI生成：最強リセット方程式
+        </div>
+        <div class="equation-box">
+          <div class="equation-subtitle">過去データから判明した、あなた特有の回復パターン</div>
+          <div class="equation-formula" id="ai-formula">データを収集中...（数日分のタグとパフォーマンス記録が必要です）</div>
+        </div>
       </div>
-      <div class="history-stat highlight">
-        <span class="history-stat-number" id="hist-streak">0</span>
-        <span class="history-stat-label">連続日数</span>
+
+      <!-- 7 Rests Radar -->
+      <div class="analytics-section">
+        <div class="section-title">🕸️ 7つの休養バランス</div>
+        <div class="radar-container bg-card-style">
+          <canvas id="rest-radar-chart"></canvas>
+        </div>
       </div>
-      <div class="history-stat">
-        <span class="history-stat-number" id="hist-week">0</span>
-        <span class="history-stat-label">今週</span>
+
+      <!-- DRAMMA Scoreboard -->
+      <div class="analytics-section">
+        <div class="section-title">🧬 DRAMMA スコアボード（リカバリーの質）</div>
+        <div class="dramma-container bg-card-style" id="dramma-bars-container">
+          <!-- JS will populate -->
+        </div>
       </div>
-    </div>
 
-    <div class="badges-section">
-      <div class="section-title">🏆 バッジコレクション</div>
-      <div class="badges-grid" id="badges-grid"></div>
-    </div>
-
-    <div class="heatmap-section">
-      <div class="section-title">📅 直近28日の活動</div>
-      <div class="heatmap-container" id="heatmap-container"></div>
-      <div class="heatmap-legend">
-        <span class="legend-label">少</span>
-        <div class="legend-cell" style="opacity:0.2"></div>
-        <div class="legend-cell" style="opacity:0.5"></div>
-        <div class="legend-cell" style="opacity:0.8"></div>
-        <div class="legend-cell" style="opacity:1"></div>
-        <span class="legend-label">多</span>
+      <!-- Stats -->
+      <div class="history-stats" style="margin-top:30px; padding:0;">
+        <div class="history-stat">
+          <span class="history-stat-number" id="hist-total">0</span>
+          <span class="history-stat-label">通算勝利</span>
+        </div>
+        <div class="history-stat highlight">
+          <span class="history-stat-number" id="hist-streak">0</span>
+          <span class="history-stat-label">連続日数</span>
+        </div>
       </div>
-    </div>
 
-    <div class="recent-wins-section">
-      <div class="section-title">🕐 最近の勝利</div>
-      <div class="recent-wins-list" id="recent-wins-list"></div>
-    </div>
+      <div class="heatmap-section" style="padding:20px 0;">
+        <div class="section-title">📅 直近28日のSOS勝利活動</div>
+        <div class="heatmap-container" id="heatmap-container"></div>
+      </div>
 
-    <div class="special-history-section">
-      <div class="section-title">🎫 スペシャルデイ履歴</div>
-      <div id="special-history-list"></div>
+      <div class="badges-section" style="padding:0;">
+        <div class="section-title">🏆 獲得バッジ</div>
+        <div class="badges-grid" id="badges-grid"></div>
+      </div>
+
     </div>
   </div>
 
@@ -363,21 +386,24 @@
     </button>
     <button class="nav-btn" data-screen="checkin">
       <span class="nav-icon">☀️</span>
-      <span class="nav-label">チェックイン</span>
+      <span class="nav-label">朝入力</span>
+    </button>
+    <button class="nav-btn" data-screen="checkout">
+      <span class="nav-icon">🌙</span>
+      <span class="nav-label">夜入力</span>
     </button>
     <button class="nav-btn" data-screen="weight">
       <span class="nav-icon">⚖️</span>
       <span class="nav-label">体重</span>
     </button>
-    <button class="nav-btn" data-screen="history">
-      <span class="nav-icon">🏅</span>
-      <span class="nav-label">記録</span>
+    <button class="nav-btn" data-screen="analytics">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">分析・記録</span>
     </button>
   </nav>
 
-  <!-- ===== MODALS ===== -->
-
-  <!-- Craving Select Modal -->
+  <!-- ===== MODALS (Craving, Badge, Special Day) - Unchanged functionally, just hidden here for brevity but existing in code ===== -->
+  <!-- ... existing modals ... -->
   <div class="modal" id="modal-craving">
     <div class="modal-content">
       <div class="modal-title">何に勝った？</div>
@@ -398,7 +424,6 @@
     </div>
   </div>
 
-  <!-- Badge Unlock Modal -->
   <div class="modal" id="modal-badge">
     <div class="modal-content badge-modal-content">
       <div class="badge-unlock-glow"></div>
@@ -410,12 +435,11 @@
     </div>
   </div>
 
-  <!-- Special Day Modal -->
   <div class="modal" id="modal-special">
     <div class="modal-content">
       <div class="modal-title">🎉 スペシャルデイを使う</div>
-      <div class="modal-subtitle">誰とどんな食事を楽しみますか？<br>大切な人との特別な時間を記録しましょう。</div>
-      <textarea class="special-note-input" id="special-note-input" rows="3" placeholder="例：教え子たちとの卒業お祝いランチ"></textarea>
+      <div class="modal-subtitle">誰とどんな食事を楽しみますか？</div>
+      <textarea class="special-note-input" id="special-note-input" rows="3" placeholder="例：教え子たちとの卒業ランチ"></textarea>
       <div class="special-modal-actions">
         <button class="special-cancel-btn" id="btn-special-cancel">やめる</button>
         <button class="special-confirm-btn" id="btn-special-confirm">🎫 使う！</button>
@@ -423,7 +447,7 @@
     </div>
   </div>
 
-  <!-- Victory Effect -->
+  <!-- EFFECTS -->
   <div class="victory-effect" id="victory-effect">
     <div class="victory-celebration">
       <div class="victory-emoji">🎉</div>
@@ -434,7 +458,6 @@
     </div>
   </div>
 
-  <!-- Special Day Effect -->
   <div class="victory-effect" id="special-effect">
     <div class="victory-celebration">
       <div class="victory-emoji">🎊</div>
@@ -445,7 +468,6 @@
     </div>
   </div>
 
-  <!-- Checkin Success Effect -->
   <div class="victory-effect" id="checkin-effect">
     <div class="victory-celebration">
       <div class="victory-emoji">🌅</div>

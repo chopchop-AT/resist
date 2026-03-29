@@ -1376,3 +1376,172 @@ canvas#weight-chart { width: 100% !important; height: 100% !important; }
   opacity: 0.4;
   cursor: default;
 }
+
+/* ========================================
+   VAS SLIDER & TAGS (v4)
+   ======================================== */
+.vas-container {
+  padding: 10px 0;
+}
+
+.vas-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+  margin-bottom: 12px;
+}
+
+.vas-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  border: 3px solid var(--bg-primary);
+}
+
+.slider-green::-webkit-slider-thumb {
+  background: var(--accent-green);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+}
+
+.vas-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+#vas-fatigue-val, #vas-pain-val, #vas-performance-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.checkin-tags-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.checkin-tag-btn {
+  padding: 12px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkin-tag-btn.selected {
+  border-color: var(--accent-green);
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--accent-green);
+}
+
+/* ========================================
+   ANALYTICS & HISTORY (v4)
+   ======================================== */
+.analytics-section {
+  margin-bottom: 24px;
+}
+
+.bg-card-style {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.radar-container {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 340px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dramma-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dramma-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dramma-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dramma-desc {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.dramma-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dramma-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), #818cf8);
+  border-radius: 3px;
+  transition: width 1s ease-out;
+}
+
+.equation-box {
+  background: linear-gradient(135deg, rgba(96,165,250,0.1), rgba(167,139,250,0.1));
+  border: 1px solid rgba(96,165,250,0.3);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  text-align: center;
+}
+
+.equation-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.equation-formula {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.checkout-message-box {
+  background: rgba(255,255,255,0.05);
+  border-left: 3px solid var(--accent-gold);
+  padding: 12px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 16px;
+}

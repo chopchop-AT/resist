@@ -105,8 +105,9 @@
     home:    document.getElementById('screen-home'),
     sos:     document.getElementById('screen-sos'),
     checkin: document.getElementById('screen-checkin'),
+    checkout: document.getElementById('screen-checkout'),
     weight:  document.getElementById('screen-weight'),
-    history: document.getElementById('screen-history')
+    analytics: document.getElementById('screen-analytics')
   };
 
   const els = {
@@ -292,15 +293,16 @@
 
   // ---- Navigation ----
   function showScreen(name) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
+    Object.values(screens).forEach(s => { if (s) s.classList.remove('active'); });
     if (screens[name]) screens[name].classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.screen === name);
     });
-    if (name === 'history') updateHistoryScreen();
     if (name === 'home') updateHomeStats();
     if (name === 'weight') updateWeightScreen();
     if (name === 'checkin') initCheckinScreen();
+    if (name === 'checkout') initCheckoutScreen();
+    if (name === 'analytics') updateAnalyticsScreen();
   }
 
   // ---- Home ----
@@ -488,6 +490,7 @@
 
     renderWeightChart(weights);
     renderWeightHistory(weights);
+    renderRecentWins();
   }
 
   function renderWeightChart(weights) {
@@ -626,15 +629,7 @@
     });
   }
 
-  // ---- History Screen ----
-  function updateHistoryScreen() {
-    els.histTotal.textContent = getTotalWins();
-    els.histStreak.textContent = getStreak();
-    els.histWeek.textContent = getWeekWins();
-    renderBadges();
-    renderHeatmap();
-    renderRecentWins();
-  }
+
 
   function renderBadges() {
     const earned = getEarnedBadges();
@@ -794,23 +789,29 @@
     els.weightInput.value = Math.min(300, cur + 0.1).toFixed(1);
   });
 
-  // ---- CHECKIN SYSTEM (v3) ----
+  // ---- CHECKIN SYSTEM (v4) ----
   const CHECKIN_KEY = 'resist_checkins';
+  const CHECKOUT_KEY = 'resist_checkouts';
 
   // Checkin state
   const checkinState = {
-    weight: null,
-    bedtime: null,
-    sleepHours: null,
-    sleepQuality: null,
-    condition: null,
-    mood: null,
-    exercise: null,
-    diet_base: null,
-    diet_alcohol: false,
-    diet_snack: false,
-    stress: null
+    weight: null, cpap: null, sleepHours: null,
+    vas_fatigue: 50, vas_pain: 50, tags: []
   };
+
+  const checkoutState = {
+    vas_performance: 50, detached_evening: null
+  };
+
+  function getCheckouts() {
+    try { return JSON.parse(localStorage.getItem(CHECKOUT_KEY)) || []; } catch { return []; }
+  }
+  function saveCheckouts(data) {
+    localStorage.setItem(CHECKOUT_KEY, JSON.stringify(data));
+  }
+  function getTodayCheckout() {
+    return getCheckouts().find(c => c.date === getTodayStr()) || null;
+  }
 
   function getCheckins() {
     try { return JSON.parse(localStorage.getItem(CHECKIN_KEY)) || []; } catch { return []; }
@@ -890,23 +891,41 @@
   }
 
   function resetCheckinForm() {
-    // Reset state
-    Object.keys(checkinState).forEach(k => {
-      if (k === 'diet_alcohol' || k === 'diet_snack') checkinState[k] = false;
-      else checkinState[k] = null;
-    });
-
-    // Reset inputs
+    checkinState.weight = null; checkinState.cpap = null; checkinState.sleepHours = null;
+    checkinState.vas_fatigue = 50; checkinState.vas_pain = 50; checkinState.tags = [];
+    
     const weightInput = document.getElementById('checkin-weight-raw');
     const weightDisplay = document.getElementById('checkin-weight-display');
-
     if (weightInput) weightInput.value = '';
     if (weightDisplay) { weightDisplay.textContent = '-- kg'; weightDisplay.classList.remove('has-value'); }
 
-    // Reset all emoji buttons
-    document.querySelectorAll('.checkin-emoji-btn').forEach(b => b.classList.remove('selected'));
-    // Reset all option buttons
-    document.querySelectorAll('.checkin-option-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#screen-checkin .checkin-option-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.checkin-tag-btn').forEach(b => b.classList.remove('selected'));
+    const vf = document.getElementById('vas-fatigue'); if(vf) vf.value = 50;
+    const vp = document.getElementById('vas-pain'); if(vp) vp.value = 50;
+    const vfv = document.getElementById('vas-fatigue-val'); if(vfv) vfv.textContent = '50';
+    const vpv = document.getElementById('vas-pain-val'); if(vpv) vpv.textContent = '50';
+  }
+
+  function initCheckoutScreen() {
+    const today = getTodayCheckout();
+    const doneMsg = document.getElementById('checkout-done-message');
+    const form = document.getElementById('checkout-form');
+    if (today) {
+      if(doneMsg) doneMsg.style.display = 'block';
+      if(form) form.style.display = 'none';
+    } else {
+      if(doneMsg) doneMsg.style.display = 'none';
+      if(form) form.style.display = 'block';
+      resetCheckoutForm();
+    }
+  }
+
+  function resetCheckoutForm() {
+    checkoutState.vas_performance = 50; checkoutState.detached_evening = null;
+    document.querySelectorAll('.checkout-opt').forEach(b => b.classList.remove('selected'));
+    const vp = document.getElementById('vas-performance'); if(vp) vp.value = 50;
+    const vpv = document.getElementById('vas-performance-val'); if(vpv) vpv.textContent = '50';
   }
 
   // Weight smart input handler
@@ -930,20 +949,6 @@
   }
 
 
-  // Emoji rating handlers (sleepQuality, condition, mood)
-  document.querySelectorAll('.checkin-emoji-row').forEach(row => {
-    const field = row.dataset.field;
-    row.querySelectorAll('.checkin-emoji-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        // Deselect siblings
-        row.querySelectorAll('.checkin-emoji-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        checkinState[field] = parseInt(btn.dataset.value, 10);
-        if (navigator.vibrate) navigator.vibrate(30);
-      });
-    });
-  });
-
   // Option button handlers
   document.querySelectorAll('.checkin-option-group').forEach(group => {
     const field = group.dataset.field;
@@ -954,19 +959,39 @@
         btn.classList.add('selected');
         let val = btn.dataset.value;
         const numVal = parseFloat(val);
-        checkinState[field] = isNaN(numVal) ? val : numVal;
+        if (field === 'detached_evening') {
+          checkoutState[field] = isNaN(numVal) ? val : numVal;
+        } else {
+          checkinState[field] = isNaN(numVal) ? val : numVal;
+        }
         if (navigator.vibrate) navigator.vibrate(30);
       });
     });
   });
 
-  // Toggle button handlers (複数選択)
-  document.querySelectorAll('.checkin-toggle-btn').forEach(btn => {
+  // Tag Add
+  document.querySelectorAll('.checkin-tag-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       btn.classList.toggle('selected');
-      const toggleField = 'diet_' + btn.dataset.toggle;
-      checkinState[toggleField] = btn.classList.contains('selected');
-      if (navigator.vibrate) navigator.vibrate(30);
+      const tag = btn.dataset.tag;
+      if (btn.classList.contains('selected')) {
+        if (!checkinState.tags.includes(tag)) checkinState.tags.push(tag);
+      } else {
+        checkinState.tags = checkinState.tags.filter(t => t !== tag);
+      }
+      if (navigator.vibrate) navigator.vibrate(20);
+    });
+  });
+
+  // VAS Sliders
+  document.querySelectorAll('.vas-slider').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      const valEl = document.getElementById(e.target.id + '-val');
+      if(valEl) valEl.textContent = val;
+      if (e.target.id === 'vas-fatigue') checkinState.vas_fatigue = val;
+      if (e.target.id === 'vas-pain') checkinState.vas_pain = val;
+      if (e.target.id === 'vas-performance') checkoutState.vas_performance = val;
     });
   });
 
@@ -1029,6 +1054,168 @@
       document.getElementById('checkin-effect').classList.remove('active');
       showScreen('home');
     });
+  }
+
+  // Save Checkout
+  const btnCheckoutSave = document.getElementById('btn-checkout-save');
+  if (btnCheckoutSave) {
+    btnCheckoutSave.addEventListener('click', () => {
+      const outs = getCheckouts();
+      const entry = { date: getTodayStr(), timestamp: new Date().toISOString(), ...checkoutState };
+      const idx = outs.findIndex(c => c.date === entry.date);
+      if (idx >= 0) outs[idx] = entry; else outs.push(entry);
+      saveCheckouts(outs);
+      syncToGas('checkout', entry);
+      if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+      initCheckoutScreen();
+    });
+  }
+
+  const btnCheckoutRedo = document.getElementById('btn-checkout-redo');
+  if (btnCheckoutRedo) {
+    btnCheckoutRedo.addEventListener('click', () => {
+      document.getElementById('checkout-done-message').style.display = 'none';
+      document.getElementById('checkout-form').style.display = 'block';
+    });
+  }
+
+  // ---- ANALYTICS SCREEN ----
+  let radarChartInstance = null;
+
+  function updateAnalyticsScreen() {
+    document.getElementById('hist-total').textContent = getTotalWins();
+    document.getElementById('hist-streak').textContent = getStreak();
+    renderBadges();
+    renderHeatmap();
+    drawRadarChart();
+    renderDramma();
+    generateBestResetFormula();
+  }
+
+  function drawRadarChart() {
+    const ctx = document.getElementById('rest-radar-chart');
+    if (!ctx) return;
+    
+    const checkins = getCheckins().slice(-7);
+    const tagCounts = {};
+    checkins.forEach(c => { (c.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1); });
+
+    let scores = [
+      (tagCounts['半身浴']||0) + (tagCounts['自然な睡眠']||0),
+      (tagCounts['スマホ断ち']||0) + (tagCounts['何もしない']||0),
+      (tagCounts['スマホ断ち']||0),
+      (tagCounts['趣味の没頭']||0),
+      (tagCounts['有意義な対話']||0),
+      (tagCounts['有意義な対話']||0) + (tagCounts['恩送り']||0),
+      (tagCounts['恩送り']||0) + (tagCounts['何もしない']||0)
+    ];
+    scores = scores.map(s => Math.min(100, Math.round((s / 7) * 100)));
+
+    if (radarChartInstance) radarChartInstance.destroy();
+    radarChartInstance = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['身体', '精神', '感覚', '創造', '感情', '社会', 'スピ'],
+        datasets: [{
+          label: '休養充足度 (%)',
+          data: scores,
+          backgroundColor: 'rgba(52, 211, 153, 0.2)',
+          borderColor: '#34d399',
+          pointBackgroundColor: '#fbbf24',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#fbbf24',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            angleLines: { color: 'rgba(255,255,255,0.1)' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            pointLabels: { color: '#8892a8', font: { size: 10, family: 'Inter' } },
+            ticks: { display: false, min: 0, max: 100 }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  function renderDramma() {
+    const checkins = getCheckins().slice(-7);
+    const tagCounts = {};
+    checkins.forEach(c => { (c.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1); });
+
+    const drammaConfig = [
+      { id: 'D', label: 'Detachment', desc: '心理的切り離し', tags: ['スマホ断ち', '何もしない'] },
+      { id: 'R', label: 'Relaxation', desc: 'リラクゼーション', tags: ['半身浴', '自然な睡眠'] },
+      { id: 'A', label: 'Autonomy', desc: '自律性（自己決定）', tags: ['何もしない', 'スマホ断ち'] },
+      { id: 'M1', label: 'Mastery', desc: '習熟（スキルアップ）', tags: ['趣味の没頭'] },
+      { id: 'M2', label: 'Meaning', desc: '意味（価値）', tags: ['恩送り', '由香ごはん'] },
+      { id: 'A2', label: 'Affiliation', desc: 'つながり', tags: ['有意義な対話', '由香ごはん'] }
+    ];
+
+    const container = document.getElementById('dramma-bars-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    drammaConfig.forEach(d => {
+      let score = 0;
+      d.tags.forEach(t => score += (tagCounts[t] || 0));
+      let pct = Math.min(100, Math.round((score / 7) * 100));
+      
+      const item = document.createElement('div');
+      item.className = 'dramma-item';
+      item.innerHTML = `
+        <div class="dramma-header">
+          <span>${d.id}: ${d.label}</span>
+          <span>${pct}%</span>
+        </div>
+        <div class="dramma-desc">${d.desc}</div>
+        <div class="dramma-bar-bg">
+          <div class="dramma-bar-fill" style="width: ${pct}%"></div>
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  }
+
+  function generateBestResetFormula() {
+    const el = document.getElementById('ai-formula');
+    if(!el) return;
+    const checkins = getCheckins();
+    if (checkins.length < 3) {
+      el.textContent = '最適なリセット方程式を見つけるため、まずは3日分データを蓄積しましょう！';
+      return;
+    }
+
+    let tagStats = {};
+    checkins.forEach(c => {
+      (c.tags || []).forEach(t => {
+        if (!tagStats[t]) tagStats[t] = { sumFatigue: 0, count: 0 };
+        tagStats[t].sumFatigue += (c.vas_fatigue || 50);
+        tagStats[t].count++;
+      });
+    });
+
+    let bestTag = null;
+    let minAvg = Number.MAX_VALUE;
+    
+    Object.keys(tagStats).forEach(t => {
+      if (tagStats[t].count >= 2) {
+        let avg = tagStats[t].sumFatigue / tagStats[t].count;
+        if (avg < minAvg) { minAvg = avg; bestTag = t; }
+      }
+    });
+
+    if (bestTag) {
+      const effect = Math.round(100 - minAvg); 
+      el.innerHTML = `直樹さんが前夜に<strong style="color:var(--accent-gold)">「${bestTag}」</strong>を行動した翌日は、疲労回復度が非常に高い水準（${effect}点）です！<br><span style="font-size:0.85rem; color:var(--text-secondary)">※「${bestTag}」が直樹さん専用の最強リセット方程式です。</span>`;
+    } else {
+      el.textContent = 'データ収集中... 翌朝の疲労と行動パターンの相関を分析しています。';
+    }
   }
 
   // ---- Service Worker ----
