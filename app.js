@@ -10,15 +10,29 @@
   const TIMER_DURATION = 15 * 60;
   const CIRCUMFERENCE = 2 * Math.PI * 90;
   const MESSAGE_INTERVAL = 10000;
-  const STORAGE_KEY = 'resist_victories';
-  const WEIGHT_KEY = 'resist_weights';
-  const BADGES_KEY = 'resist_badges';
-  const SPECIAL_KEY = 'resist_special';
+  // Storage key migration: resist_* → revive_* (preserves existing data)
+  function migrateKey(oldKey, newKey) {
+    if (!localStorage.getItem(newKey) && localStorage.getItem(oldKey)) {
+      localStorage.setItem(newKey, localStorage.getItem(oldKey));
+    }
+  }
+  migrateKey('resist_victories', 'revive_victories');
+  migrateKey('resist_weights', 'revive_weights');
+  migrateKey('resist_badges', 'revive_badges');
+  migrateKey('resist_special', 'revive_special');
+  migrateKey('resist_checkins', 'revive_checkins');
+  migrateKey('resist_checkouts', 'revive_checkouts');
+  migrateKey('resist_sync_queue', 'revive_sync_queue');
+
+  const STORAGE_KEY = 'revive_victories';
+  const WEIGHT_KEY = 'revive_weights';
+  const BADGES_KEY = 'revive_badges';
+  const SPECIAL_KEY = 'revive_special';
   const WINS_PER_TICKET = 10; // 勝利N回でチケット1枚
 
   // ---- Sync (Google Apps Script) ----
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbyN7Pob4WdTngwJgLspbCbT3iumeA2qss0OmBB0u0bWP7qHt1ntLUbwnfjSjXfJrJeE/exec';
-  const SYNC_QUEUE_KEY = 'resist_sync_queue';
+  const SYNC_QUEUE_KEY = 'revive_sync_queue';
 
   function syncToGas(type, payload) {
     const item = { type, payload, id: Date.now() + Math.random() };
@@ -549,7 +563,7 @@
     if (name === 'weight') updateWeightScreen();
     if (name === 'checkin') initCheckinScreen();
     if (name === 'checkout') initCheckoutScreen();
-    if (name === 'rest') initRestScreen();
+    // rest screen removed — integrated into checkout
     if (name === 'analytics') updateAnalyticsScreen();
   }
 
@@ -559,11 +573,32 @@
     els.currentStreak.textContent = getStreak();
     els.totalWins.textContent = getTotalWins();
 
+    // Daily score on home
+    const today = getTodayStr();
+    const score = calculateDailyScore(today);
+    const scoreEl = document.getElementById('home-score-total');
+    if (score && scoreEl) {
+      scoreEl.textContent = score.total;
+      scoreEl.className = 'home-score-total ' + (score.total >= 70 ? 'score-high' : score.total >= 40 ? 'score-mid' : 'score-low');
+      document.getElementById('home-cat-sleep').textContent = score.sleep.score + '/' + score.sleep.max;
+      document.getElementById('home-cat-lifestyle').textContent = score.lifestyle.score + '/' + score.lifestyle.max;
+      document.getElementById('home-cat-perf').textContent = score.performance.score + '/' + score.performance.max;
+      document.getElementById('home-cat-recovery').textContent = score.recovery.score + '/' + score.recovery.max;
+    }
+
+    // Progress indicators
+    const progCheckin = document.getElementById('home-prog-checkin');
+    const progCheckout = document.getElementById('home-prog-checkout');
+    const progRest = document.getElementById('home-prog-rest');
+    if (progCheckin) progCheckin.className = 'home-progress-item' + (getTodayCheckin() ? ' done' : '');
+    if (progCheckout) progCheckout.className = 'home-progress-item' + (getTodayCheckout() ? ' done' : '');
+    if (progRest) progRest.className = 'home-progress-item' + (getTodayRest() ? ' done' : '');
+
     // Show latest earned badge
     const earned = getEarnedBadges();
     if (earned.length > 0) {
       const latest = BADGE_DEFS.find(b => b.id === earned[earned.length - 1]);
-      if (latest) {
+      if (latest && els.homeLatestBadge) {
         els.homeBadgeIcon.textContent = latest.icon;
         els.homeBadgeName.textContent = `最新バッジ：${latest.name}`;
         els.homeLatestBadge.style.display = 'block';
@@ -1038,8 +1073,8 @@
   });
 
   // ---- CHECKIN SYSTEM (v4) ----
-  const CHECKIN_KEY = 'resist_checkins';
-  const CHECKOUT_KEY = 'resist_checkouts';
+  const CHECKIN_KEY = 'revive_checkins';
+  const CHECKOUT_KEY = 'revive_checkouts';
 
   // Checkin state
   const checkinState = {
@@ -1126,9 +1161,45 @@
       doneMsg.style.display = 'none';
       form.style.display = 'block';
       resetCheckinForm();
+      showLastNightReview();
     }
 
     updateCheckinGreeting();
+  }
+
+  function showLastNightReview() {
+    const reviewSection = document.getElementById('last-night-review');
+    const plansList = document.getElementById('last-night-plans-list');
+    if (!reviewSection || !plansList) return;
+
+    // Get yesterday's rest plans
+    const yesterday = getDateStr(new Date(Date.now() - 86400000));
+    const lastRest = getRestRecords().find(r => r.date === yesterday);
+
+    if (!lastRest || !lastRest.plans || lastRest.plans.length === 0) {
+      reviewSection.style.display = 'none';
+      return;
+    }
+
+    reviewSection.style.display = 'block';
+    plansList.innerHTML = '';
+    lastRest.plans.forEach(plan => {
+      const btn = document.createElement('button');
+      btn.className = 'checkin-tag-btn';
+      btn.dataset.tag = 'rest_done_' + plan;
+      btn.textContent = '✅ ' + plan;
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('selected');
+        const tag = btn.dataset.tag;
+        if (btn.classList.contains('selected')) {
+          if (!checkinState.tags.includes(tag)) checkinState.tags.push(tag);
+        } else {
+          checkinState.tags = checkinState.tags.filter(t => t !== tag);
+        }
+        if (navigator.vibrate) navigator.vibrate(20);
+      });
+      plansList.appendChild(btn);
+    });
   }
 
   function updateCheckinGreeting() {
@@ -1169,6 +1240,7 @@
       if(form) form.style.display = 'block';
       resetCheckoutForm();
       shuffleRituals();
+      shuffleRestPlans();
     }
   }
 
@@ -1427,13 +1499,24 @@
   const btnCheckoutSave = document.getElementById('btn-checkout-save');
   if (btnCheckoutSave) {
     btnCheckoutSave.addEventListener('click', () => {
+      // Save checkout
       const outs = getCheckouts();
       const entry = { date: getTodayStr(), timestamp: new Date().toISOString(), ...checkoutState };
       const idx = outs.findIndex(c => c.date === entry.date);
       if (idx >= 0) outs[idx] = entry; else outs.push(entry);
       saveCheckouts(outs);
       syncToGas('checkout', entry);
+
+      // Save rest plans (integrated into checkout)
+      const records = getRestRecords();
+      const restEntry = { date: getTodayStr(), timestamp: new Date().toISOString(), plans: [...restState.selectedPlans] };
+      const rIdx = records.findIndex(r => r.date === restEntry.date);
+      if (rIdx >= 0) records[rIdx] = restEntry; else records.push(restEntry);
+      localStorage.setItem(REST_KEY, JSON.stringify(records));
+      syncToGas('rest', restEntry);
+
       if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+      updateHomeStats();
       initCheckoutScreen();
     });
   }
@@ -1447,28 +1530,7 @@
   }
 
   // ---- REST SCREEN EVENT HANDLERS ----
-  const btnRestSave = document.getElementById('btn-rest-save');
-  if (btnRestSave) {
-    btnRestSave.addEventListener('click', () => {
-      const records = getRestRecords();
-      const entry = { date: getTodayStr(), timestamp: new Date().toISOString(), plans: [...restState.selectedPlans] };
-      const idx = records.findIndex(r => r.date === entry.date);
-      if (idx >= 0) records[idx] = entry; else records.push(entry);
-      localStorage.setItem(REST_KEY, JSON.stringify(records));
-      syncToGas('rest', entry);
-      if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
-      initRestScreen();
-    });
-  }
-
-  const btnRestRedo = document.getElementById('btn-rest-redo');
-  if (btnRestRedo) {
-    btnRestRedo.addEventListener('click', () => {
-      document.getElementById('rest-done-message').style.display = 'none';
-      document.getElementById('rest-form').style.display = 'block';
-      shuffleRestPlans();
-    });
-  }
+  // (Rest save/redo removed — now handled by checkout save)
 
   const btnShuffleRest = document.getElementById('btn-shuffle-rest');
   if (btnShuffleRest) {
@@ -1484,38 +1546,41 @@
     const checkout = getCheckouts().find(c => c.date === dateStr);
     const rest = getRestRecords().find(r => r.date === dateStr);
 
-    if (!checkin) return null; // 朝データなしはスコア算出不可
+    if (!checkin) return null;
 
-    // --- Cat 1: 睡眠と回復 (30点) ---
-    const sleepHoursMap = { '8': 10, '7.5': 9, '7': 8, '6.5': 6, '6': 5, '5.5': 3, '5': 2, '4.5': 0 };
-    const sleepHoursScore = sleepHoursMap[String(checkin.sleepHours)] ?? 5;
-    const sleepQualityMap = { 'great': 8, 'ok': 5, 'light': 2, 'terrible': 0 };
-    const sleepQualityScore = sleepQualityMap[checkin.sleepQuality] ?? 4;
+    const tags = checkin.tags || [];
+
+    // --- Cat 1: 睡眠と身体 (35点) ---
+    const sleepHoursMap = { '8': 8, '7.5': 7, '7': 6, '6.5': 5, '6': 4, '5.5': 2, '5': 1, '4.5': 0 };
+    const sleepHoursScore = sleepHoursMap[String(checkin.sleepHours)] ?? 4;
+    const sleepQualityMap = { 'great': 6, 'ok': 4, 'light': 2, 'terrible': 0 };
+    const sleepQualityScore = sleepQualityMap[checkin.sleepQuality] ?? 3;
     const cpapMap = { 2: 6, 1: 3, 0: 0 };
     const cpapScore = cpapMap[checkin.cpap] ?? 0;
-    const painScore = Math.round(6 * (1 - (checkin.vas_pain ?? 50) / 100));
+    const painScore = Math.round(15 * (1 - (checkin.vas_pain ?? 50) / 100));
     const sleepTotal = sleepHoursScore + sleepQualityScore + cpapScore + painScore;
 
     // --- Cat 2: 生活習慣 (25点) ---
-    const dinnerTypeMap = { 'yuka': 8, 'eating_out': 4, 'eating_out_alcohol': 0 };
+    const dinnerTypeMap = { 'yuka': 8, 'eating_out': 4, 'eating_out_alcohol': 1 };
     const dinnerTypeScore = dinnerTypeMap[checkin.dinnerType] ?? 4;
     const dinnerTimeMap = { 'before19': 5, '19to21': 3, 'after21': 1 };
     const dinnerTimeScore = dinnerTimeMap[checkin.dinnerTime] ?? 2;
     const healthTags = ['朝ウォーキング', '夜ストレッチ', 'ジャーナリング', '間食なし', 'サプリメント'];
-    const tags = checkin.tags || [];
     let healthHabitScore = 0;
     healthTags.forEach(ht => { if (tags.includes(ht)) healthHabitScore += 2.4; });
     healthHabitScore = Math.round(healthHabitScore);
     const lifestyleTotal = dinnerTypeScore + dinnerTimeScore + healthHabitScore;
 
-    // --- Cat 3: パフォーマンス (20点) ---
+    // --- Cat 3: パフォーマンス & SOS (20点) ---
     const perfVas = checkout ? (checkout.vas_performance ?? 50) : 50;
-    const perfScore = Math.round(12 * perfVas / 100);
-    const fatigueScore = Math.round(8 * (1 - (checkin.vas_fatigue ?? 50) / 100));
-    const performanceTotal = perfScore + fatigueScore;
+    const perfScore = Math.round(10 * perfVas / 100);
+    const fatigueScore = Math.round(6 * (1 - (checkin.vas_fatigue ?? 50) / 100));
+    // SOS victories contribute (max 4pts)
+    const todayVictories = getVictories().filter(v => getDateStr(v.date) === dateStr).length;
+    const sosScore = Math.min(4, todayVictories * 2);
+    const performanceTotal = perfScore + fatigueScore + sosScore;
 
-    // --- Cat 4: リカバリー行動 (25点) ---
-    // 朝DRAMMA休養タグ (10点)
+    // --- Cat 4: リカバリー行動 (20点) ---
     const drammaTagMap = {
       D: ['スマホ断ち', '何もしない', '通知オフ'],
       R: ['半身浴', '自然な睡眠', 'ストレッチ'],
@@ -1528,21 +1593,19 @@
     Object.values(drammaTagMap).forEach(catTags => {
       if (catTags.some(t => tags.includes(t))) drammaCatsFilled++;
     });
-    const morningDrammaScore = Math.round(drammaCatsFilled * (10 / 6));
+    const morningDrammaScore = Math.round(drammaCatsFilled * (8 / 6));
 
-    // 夜リチュアル (8点)
     const ritualCount = checkout ? (checkout.logoutRituals || []).length : 0;
     let ritualScore = 0;
-    if (ritualCount >= 5) ritualScore = 8;
-    else if (ritualCount >= 3) ritualScore = 5;
-    else if (ritualCount >= 1) ritualScore = 3;
+    if (ritualCount >= 5) ritualScore = 6;
+    else if (ritualCount >= 3) ritualScore = 4;
+    else if (ritualCount >= 1) ritualScore = 2;
 
-    // 休養プラン (7点)
     const planCount = rest ? (rest.plans || []).length : 0;
     let planScore = 0;
-    if (planCount >= 5) planScore = 7;
-    else if (planCount >= 3) planScore = 5;
-    else if (planCount >= 1) planScore = 3;
+    if (planCount >= 5) planScore = 6;
+    else if (planCount >= 3) planScore = 4;
+    else if (planCount >= 1) planScore = 2;
 
     const recoveryTotal = morningDrammaScore + ritualScore + planScore;
 
@@ -1550,10 +1613,10 @@
 
     return {
       total: Math.min(100, total),
-      sleep: { score: sleepTotal, max: 30 },
+      sleep: { score: sleepTotal, max: 35 },
       lifestyle: { score: lifestyleTotal, max: 25 },
       performance: { score: performanceTotal, max: 20 },
-      recovery: { score: recoveryTotal, max: 25 }
+      recovery: { score: recoveryTotal, max: 20 }
     };
   }
 
