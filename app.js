@@ -1049,7 +1049,7 @@
   };
 
   const checkoutState = {
-    vas_performance: 50, reflection: null, logoutRituals: [], dailyScore: 50
+    vas_performance: 50, reflection: null, logoutRituals: []
   };
 
   function getCheckouts() {
@@ -1275,11 +1275,9 @@
   }
 
   function resetCheckoutForm() {
-    checkoutState.vas_performance = 50; checkoutState.reflection = null; checkoutState.logoutRituals = []; checkoutState.dailyScore = 50;
+    checkoutState.vas_performance = 50; checkoutState.reflection = null; checkoutState.logoutRituals = [];
     const vp = document.getElementById('vas-performance'); if(vp) vp.value = 50;
     const vpv = document.getElementById('vas-performance-val'); if(vpv) vpv.textContent = '50';
-    const ds = document.getElementById('vas-daily-score'); if(ds) ds.value = 50;
-    const dsv = document.getElementById('vas-daily-score-val'); if(dsv) dsv.textContent = '50';
     const ref = document.getElementById('checkout-reflection'); if(ref) ref.value = '';
     document.querySelectorAll('.logout-ritual-btn').forEach(b => b.classList.remove('selected'));
   }
@@ -1361,7 +1359,6 @@
       if (e.target.id === 'vas-fatigue') checkinState.vas_fatigue = val;
       if (e.target.id === 'vas-pain') checkinState.vas_pain = val;
       if (e.target.id === 'vas-performance') checkoutState.vas_performance = val;
-      if (e.target.id === 'vas-daily-score') checkoutState.dailyScore = val;
     });
   });
 
@@ -1481,12 +1478,148 @@
     });
   }
 
+  // ---- DAILY SCORING ENGINE ----
+  function calculateDailyScore(dateStr) {
+    const checkin = getCheckins().find(c => c.date === dateStr);
+    const checkout = getCheckouts().find(c => c.date === dateStr);
+    const rest = getRestRecords().find(r => r.date === dateStr);
+
+    if (!checkin) return null; // 朝データなしはスコア算出不可
+
+    // --- Cat 1: 睡眠と回復 (30点) ---
+    const sleepHoursMap = { '8': 10, '7.5': 9, '7': 8, '6.5': 6, '6': 5, '5.5': 3, '5': 2, '4.5': 0 };
+    const sleepHoursScore = sleepHoursMap[String(checkin.sleepHours)] ?? 5;
+    const sleepQualityMap = { 'great': 8, 'ok': 5, 'light': 2, 'terrible': 0 };
+    const sleepQualityScore = sleepQualityMap[checkin.sleepQuality] ?? 4;
+    const cpapMap = { 2: 6, 1: 3, 0: 0 };
+    const cpapScore = cpapMap[checkin.cpap] ?? 0;
+    const painScore = Math.round(6 * (1 - (checkin.vas_pain ?? 50) / 100));
+    const sleepTotal = sleepHoursScore + sleepQualityScore + cpapScore + painScore;
+
+    // --- Cat 2: 生活習慣 (25点) ---
+    const dinnerTypeMap = { 'yuka': 8, 'eating_out': 4, 'eating_out_alcohol': 0 };
+    const dinnerTypeScore = dinnerTypeMap[checkin.dinnerType] ?? 4;
+    const dinnerTimeMap = { 'before19': 5, '19to21': 3, 'after21': 1 };
+    const dinnerTimeScore = dinnerTimeMap[checkin.dinnerTime] ?? 2;
+    const healthTags = ['朝ウォーキング', '夜ストレッチ', 'ジャーナリング', '間食なし', 'サプリメント'];
+    const tags = checkin.tags || [];
+    let healthHabitScore = 0;
+    healthTags.forEach(ht => { if (tags.includes(ht)) healthHabitScore += 2.4; });
+    healthHabitScore = Math.round(healthHabitScore);
+    const lifestyleTotal = dinnerTypeScore + dinnerTimeScore + healthHabitScore;
+
+    // --- Cat 3: パフォーマンス (20点) ---
+    const perfVas = checkout ? (checkout.vas_performance ?? 50) : 50;
+    const perfScore = Math.round(12 * perfVas / 100);
+    const fatigueScore = Math.round(8 * (1 - (checkin.vas_fatigue ?? 50) / 100));
+    const performanceTotal = perfScore + fatigueScore;
+
+    // --- Cat 4: リカバリー行動 (25点) ---
+    // 朝DRAMMA休養タグ (10点)
+    const drammaTagMap = {
+      D: ['スマホ断ち', '何もしない', '通知オフ'],
+      R: ['半身浴', '自然な睡眠', 'ストレッチ'],
+      A: ['自分時間', '早めの就寝'],
+      M1: ['趣味の没頭', '読書'],
+      M2: ['恩送り', '由香ごはん', '感謝'],
+      A2: ['有意義な対話', '子どもと遊ぶ']
+    };
+    let drammaCatsFilled = 0;
+    Object.values(drammaTagMap).forEach(catTags => {
+      if (catTags.some(t => tags.includes(t))) drammaCatsFilled++;
+    });
+    const morningDrammaScore = Math.round(drammaCatsFilled * (10 / 6));
+
+    // 夜リチュアル (8点)
+    const ritualCount = checkout ? (checkout.logoutRituals || []).length : 0;
+    let ritualScore = 0;
+    if (ritualCount >= 5) ritualScore = 8;
+    else if (ritualCount >= 3) ritualScore = 5;
+    else if (ritualCount >= 1) ritualScore = 3;
+
+    // 休養プラン (7点)
+    const planCount = rest ? (rest.plans || []).length : 0;
+    let planScore = 0;
+    if (planCount >= 5) planScore = 7;
+    else if (planCount >= 3) planScore = 5;
+    else if (planCount >= 1) planScore = 3;
+
+    const recoveryTotal = morningDrammaScore + ritualScore + planScore;
+
+    const total = sleepTotal + lifestyleTotal + performanceTotal + recoveryTotal;
+
+    return {
+      total: Math.min(100, total),
+      sleep: { score: sleepTotal, max: 30 },
+      lifestyle: { score: lifestyleTotal, max: 25 },
+      performance: { score: performanceTotal, max: 20 },
+      recovery: { score: recoveryTotal, max: 25 }
+    };
+  }
+
+  function renderDailyScores() {
+    const container = document.getElementById('daily-scores-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      dates.push(getDateStr(new Date(Date.now() - i * 86400000)));
+    }
+
+    let hasAny = false;
+    dates.forEach(dateStr => {
+      const result = calculateDailyScore(dateStr);
+      if (!result) return;
+      hasAny = true;
+
+      const d = new Date(dateStr);
+      const dateLabel = `${d.getMonth() + 1}/${d.getDate()}`;
+      const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+      const dayName = dayNames[d.getDay()];
+
+      const scoreClass = result.total >= 70 ? 'score-high' : result.total >= 40 ? 'score-mid' : 'score-low';
+
+      const cats = [
+        { label: '睡眠回復', score: result.sleep.score, max: result.sleep.max, color: 'var(--accent-blue)' },
+        { label: '生活習慣', score: result.lifestyle.score, max: result.lifestyle.max, color: 'var(--accent-green)' },
+        { label: 'パフォーマンス', score: result.performance.score, max: result.performance.max, color: 'var(--accent-gold)' },
+        { label: 'リカバリー', score: result.recovery.score, max: result.recovery.max, color: '#a78bfa' }
+      ];
+
+      const barsHtml = cats.map(c => {
+        const pct = Math.round((c.score / c.max) * 100);
+        return `<div class="score-cat">
+          <span class="score-cat-label">${c.label}</span>
+          <div class="score-cat-bar-bg"><div class="score-cat-bar" style="width:${pct}%; background:${c.color}"></div></div>
+          <span class="score-cat-val">${c.score}/${c.max}</span>
+        </div>`;
+      }).join('');
+
+      const card = document.createElement('div');
+      card.className = 'score-card';
+      card.innerHTML = `
+        <div class="score-card-header">
+          <span class="score-card-date">${dateLabel}(${dayName})</span>
+          <span><span class="score-card-total ${scoreClass}">${result.total}</span><span class="score-card-unit"> /100</span></span>
+        </div>
+        <div class="score-breakdown">${barsHtml}</div>
+      `;
+      container.appendChild(card);
+    });
+
+    if (!hasAny) {
+      container.innerHTML = '<div class="score-empty">朝のチェックインを記録するとスコアが表示されます</div>';
+    }
+  }
+
   // ---- ANALYTICS SCREEN ----
   let radarChartInstance = null;
 
   function updateAnalyticsScreen() {
     document.getElementById('hist-total').textContent = getTotalWins();
     document.getElementById('hist-streak').textContent = getStreak();
+    renderDailyScores();
     renderBadges();
     renderHeatmap();
     drawRadarChart();

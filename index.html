@@ -157,9 +157,10 @@
             </div>
             
             <div class="checkin-rating-label" style="margin-top:16px;">CPAP装着できた？</div>
-            <div class="checkin-option-group" data-field="cpap" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-              <button class="checkin-option-btn" data-value="1">✅ バッチリ装着</button>
-              <button class="checkin-option-btn" data-value="0">❌ 外してしまった</button>
+            <div class="checkin-option-group" data-field="cpap" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+              <button class="checkin-option-btn" data-value="2">✅ バッチリ</button>
+              <button class="checkin-option-btn" data-value="1">😐 途中で外した</button>
+              <button class="checkin-option-btn" data-value="0">❌ つけなかった</button>
             </div>
           </div>
         </div>
@@ -358,22 +359,6 @@
           </div>
         </div>
 
-        <!-- 1日の総合スコア -->
-        <div class="checkin-section">
-          <div class="checkin-section-title">🏆 今日の総合スコア</div>
-          <div class="checkin-rating-group">
-            <div class="checkin-rating-label" style="font-size:0.85rem">健康・仕事・回復すべて含めて、今日は100点中何点でしたか？</div>
-            <div class="vas-container" style="margin-top:20px;">
-              <input type="range" class="vas-slider slider-gold" id="vas-daily-score" min="0" max="100" value="50">
-              <div class="vas-labels">
-                <span>最悪の日😩</span>
-                <span id="vas-daily-score-val" style="font-size:1.4rem; font-weight:900; color:var(--accent-gold);">50</span>
-                <span>最高の日🌟</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <button class="checkin-save-btn" id="btn-checkout-save" style="background: linear-gradient(135deg, #60a5fa, #3b82f6);">
           🚪 今日を締めくくる (保存)
         </button>
@@ -439,6 +424,12 @@
 
     <div class="checkin-scroll">
       
+      <!-- Daily Scores -->
+      <div class="analytics-section">
+        <div class="section-title">🏆 デイリースコア（自動算出）</div>
+        <div id="daily-scores-container"></div>
+      </div>
+
       <!-- AI Reset Formula -->
       <div class="analytics-section">
         <div class="section-title" style="display:flex; align-items:center; gap:6px;">

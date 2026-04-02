@@ -1669,3 +1669,79 @@ canvas#weight-chart { width: 100% !important; height: 100% !important; }
   margin-right: 4px;
   vertical-align: middle;
 }
+
+/* ========================================
+   DAILY SCORE CARDS (v5)
+   ======================================== */
+.score-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 8px;
+}
+.score-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.score-card-date {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.score-card-total {
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.score-card-total.score-high { color: var(--accent-green); }
+.score-card-total.score-mid { color: var(--accent-gold); }
+.score-card-total.score-low { color: var(--accent-red); }
+.score-card-unit {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.score-breakdown {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.score-cat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.score-cat-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  min-width: 52px;
+  font-weight: 600;
+}
+.score-cat-bar-bg {
+  flex: 1;
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-cat-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s ease-out;
+}
+.score-cat-val {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 28px;
+  text-align: right;
+}
+.score-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 20px;
+}
