@@ -1335,7 +1335,7 @@ canvas#weight-chart { width: 100% !important; height: 100% !important; }
   font-weight: 600;
   font-family: var(--font-main);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
 
@@ -1440,6 +1440,7 @@ canvas#weight-chart { width: 100% !important; height: 100% !important; }
   font-weight: 600;
   font-family: var(--font-main);
   cursor: pointer;
+  text-align: left;
   transition: all 0.2s;
 }
 
@@ -1544,4 +1545,122 @@ canvas#weight-chart { width: 100% !important; height: 100% !important; }
   color: var(--text-secondary);
   line-height: 1.5;
   margin-top: 16px;
+}
+
+/* ========================================
+   CHECKOUT ENHANCEMENTS (v5)
+   ======================================== */
+
+/* Reflection Textarea */
+.checkout-reflection-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: var(--font-main);
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+  margin-top: 8px;
+  transition: border-color 0.2s;
+}
+.checkout-reflection-textarea:focus {
+  border-color: var(--accent-blue);
+}
+.checkout-reflection-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Logout Ritual Grid & Buttons */
+.logout-ritual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.logout-ritual-btn {
+  padding: 14px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-main);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  line-height: 1.4;
+}
+.logout-ritual-btn:active {
+  transform: scale(0.97);
+}
+.logout-ritual-btn.selected {
+  border-color: var(--accent-green);
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+.ritual-dramma-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Shuffle Button */
+.ritual-shuffle-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(255,255,255,0.15);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-main);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.ritual-shuffle-btn:active {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+/* ========================================
+   DRAMMA SPLIT BAR (v5)
+   ======================================== */
+.dramma-bar-fill-morning {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), #818cf8);
+  display: inline-block;
+  vertical-align: top;
+}
+.dramma-bar-fill-evening {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-green), #6ee7b7);
+  display: inline-block;
+  vertical-align: top;
+}
+.dramma-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.dramma-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
 }

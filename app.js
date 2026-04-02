@@ -1,6 +1,6 @@
 /* ========================================
-   RESIST - 食欲撃退アプリ v2
-   体重記録 + バッジシステム追加
+   REVIVE - Personal Health OS v5
+   回復と活力を取り戻すパーソナルHealth OS
    ======================================== */
 
 (function() {
@@ -92,6 +92,252 @@
     { text: '…',      duration: 2000 }
   ];
 
+  // ---- Logout Ritual Pool (DRAMMA) — 100 rituals ----
+  const RITUAL_POOL = {
+    D: [
+      { icon: '📵', text: '仕事の通知を全てオフにする' },
+      { icon: '💻', text: '仕事アプリ・メールを閉じる' },
+      { icon: '🎧', text: 'お気に入りの音楽を1曲聴く' },
+      { icon: '🚶', text: '帰り道で少し遠回りする' },
+      { icon: '📱', text: 'SNSを5分だけ封印する' },
+      { icon: '🧘', text: '1分間、目を閉じて呼吸に集中' },
+      { icon: '🪟', text: '空や景色を30秒間ぼーっと眺める' },
+      { icon: '📝', text: '明日のToDoを書き出して頭を空にする' },
+      { icon: '🚪', text: '「今日の仕事は終わり」と口に出す' },
+      { icon: '🔇', text: 'イヤホンを外して環境音に集中する' },
+      { icon: '🌉', text: '天満橋の景色を眺めて深呼吸する' },
+      { icon: '🧳', text: 'カバンを閉じて「仕事完了」の儀式をする' },
+      { icon: '🎶', text: '帰り道専用のプレイリストを再生する' },
+      { icon: '☁️', text: '雲の形を30秒間観察する' },
+      { icon: '🚃', text: '電車の揺れに身を任せて何も考えない' },
+      { icon: '🌆', text: '夕暮れの色の変化を味わう' },
+      { icon: '💨', text: '3回深く息を吐いて仕事を手放す' }
+    ],
+    R: [
+      { icon: '🫁', text: '深呼吸を3回ゆっくりする' },
+      { icon: '🤲', text: '手のひらをグーパーして力を抜く' },
+      { icon: '💆', text: '首・肩を軽く回す' },
+      { icon: '🛀', text: '帰ったらぬるめのシャワーを浴びる' },
+      { icon: '☕', text: 'ノンカフェインの温かい飲み物を想像する' },
+      { icon: '🦶', text: '靴を脱いだら足の指を広げる' },
+      { icon: '😌', text: '電車の中で全身の力を抜いてみる' },
+      { icon: '🌬️', text: '4-7-8呼吸法を1セットやる' },
+      { icon: '👐', text: '手首をぶらぶらさせて脱力する' },
+      { icon: '🧖', text: '帰宅後に半身浴する予定を立てる' },
+      { icon: '👁️', text: '目を閉じて眼球を優しく回す' },
+      { icon: '🤷', text: '肩を耳まで上げてストンと落とす×3回' },
+      { icon: '🫠', text: '座ったまま全身をゆるめるボディスキャン' },
+      { icon: '👃', text: '好きな香りを思い出してリラックスする' },
+      { icon: '🌊', text: '波の音を想像しながら呼吸を整える' },
+      { icon: '😮‍💨', text: 'ため息を「意図的に」3回つく' },
+      { icon: '🖐️', text: '指を1本ずつゆっくり曲げ伸ばしする' }
+    ],
+    A: [
+      { icon: '🎯', text: '今夜やりたいことを1つ決める' },
+      { icon: '📖', text: '読みたい本のページを開く準備をする' },
+      { icon: '🎮', text: '今夜の「自分時間」を宣言する' },
+      { icon: '🛒', text: '帰り道で自分だけのちょっとした寄り道' },
+      { icon: '📺', text: '見たかった動画を1本選んでおく' },
+      { icon: '🗓️', text: '明日の「ごほうびタイム」を決める' },
+      { icon: '🎵', text: '今の気分に合うプレイリストを選ぶ' },
+      { icon: '🍵', text: '今夜飲む飲み物を自分で選ぶ' },
+      { icon: '📱', text: '今夜のスマホ使用時間を自分で決める' },
+      { icon: '🌙', text: '就寝時間を自分で設定する' },
+      { icon: '🛤️', text: '帰り道のルートを自分で選ぶ' },
+      { icon: '🍽️', text: '今夜食べたいおかずを1品リクエストする' },
+      { icon: '🧴', text: '今夜使うボディケアアイテムを決める' },
+      { icon: '📓', text: '今夜書く日記のテーマを決める' },
+      { icon: '⏰', text: '明朝のアラーム時刻を自分で調整する' },
+      { icon: '🪴', text: '今夜の「小さな楽しみ」を1つ決める' },
+      { icon: '🎒', text: '明日の準備を今夜中にやると決める' }
+    ],
+    M1: [
+      { icon: '📚', text: '今日学んだことを1つ思い出す' },
+      { icon: '💡', text: '今日の「小さな工夫」を振り返る' },
+      { icon: '🏅', text: '今日うまくいったことを1つ思い出す' },
+      { icon: '🧠', text: '新しく知った言葉や概念を反芻する' },
+      { icon: '📊', text: '今日の自分の成長を数値で振り返る' },
+      { icon: '✍️', text: '明日試したいアイデアを1つメモする' },
+      { icon: '🎓', text: '今日教えた中で一番良かった授業を思い出す' },
+      { icon: '🔧', text: '今日改善できた業務プロセスを確認する' },
+      { icon: '📐', text: '今日取り組んだ課題の進捗を整理する' },
+      { icon: '🌱', text: '1ヶ月前の自分と今の自分を比べてみる' },
+      { icon: '🗣️', text: '今日の授業で生徒の反応が良かった場面を振り返る' },
+      { icon: '⚙️', text: '今日発見した時短テクニックを記憶する' },
+      { icon: '📈', text: '今週の自分の成長ポイントを1つ挙げる' },
+      { icon: '🔍', text: '今日「なぜ？」と思ったことを1つ覚えておく' },
+      { icon: '🎯', text: '明日の授業で試す新しいアプローチを考える' },
+      { icon: '📋', text: '今日の業務で効率化できた点を振り返る' },
+      { icon: '💪', text: '今日の自分の頑張りを具体的に1つ認める' }
+    ],
+    M2: [
+      { icon: '🙏', text: '今日感謝できることを1つ思い浮かべる' },
+      { icon: '💌', text: '誰かの役に立てた瞬間を思い出す' },
+      { icon: '🌟', text: '今日の仕事が誰の未来につながるか想像する' },
+      { icon: '🎁', text: '帰宅後に家族にできる小さな親切を考える' },
+      { icon: '📸', text: '今日一番心に残った場面を思い返す' },
+      { icon: '🤝', text: '今日「ありがとう」と言えた回数を数える' },
+      { icon: '🕊️', text: '明日、誰かのためにできることを1つ考える' },
+      { icon: '🌈', text: '今日の良かった出来事を3つ思い出す' },
+      { icon: '📖', text: '自分の仕事の「意味」を一言で表現してみる' },
+      { icon: '💫', text: '教え子たちの成長を思い浮かべる' },
+      { icon: '🏫', text: '自分が教師になった理由を思い出す' },
+      { icon: '🌻', text: '今日の小さな幸せを1つ数える' },
+      { icon: '✨', text: '家族の笑顔を思い浮かべる' },
+      { icon: '🫶', text: '今日自分が誰かに与えた影響を想像する' },
+      { icon: '🕰️', text: '5年後の教え子の姿を想像してみる' },
+      { icon: '🌍', text: '自分の存在が誰かの支えになっていることを認める' },
+      { icon: '📜', text: '今日の仕事で一番誇れることを1つ選ぶ' }
+    ],
+    A2: [
+      { icon: '👋', text: '家族に「ただいま」のメッセージを送る' },
+      { icon: '💬', text: '今日話して楽しかった人を思い出す' },
+      { icon: '📞', text: '久しぶりに連絡したい人を思い浮かべる' },
+      { icon: '🍲', text: '今夜の食卓での話題を1つ考える' },
+      { icon: '🤗', text: '帰ったら最初に家族に声をかける' },
+      { icon: '😊', text: '今日職場で笑い合った瞬間を思い出す' },
+      { icon: '✉️', text: '感謝のメッセージを1つ送る（送らなくてもOK）' },
+      { icon: '🏠', text: '家族の今日の様子を聞く質問を用意する' },
+      { icon: '👨‍👩‍👧', text: '週末の家族プランを考える' },
+      { icon: '🎉', text: '教え子や同僚の良いニュースを思い出す' },
+      { icon: '🫂', text: '帰宅したらハグする' },
+      { icon: '🍳', text: '由香さんのご飯を楽しみにしていると伝える' },
+      { icon: '📷', text: '今日の出来事を1つ家族に話す準備をする' },
+      { icon: '🎲', text: '帰宅後に子どもと遊ぶ内容を考える' },
+      { icon: '👂', text: '家族の話を「最後まで聞く」と決める' },
+      { icon: '💐', text: '帰り道で家族へのお土産を考える' },
+      { icon: '🤙', text: '同僚に「お疲れ様」を丁寧に言う' }
+    ]
+  };
+
+  // ---- Rest Plan Pool (DRAMMA) — 102 plans ----
+  const REST_PLAN_POOL = {
+    D: [
+      { icon: '📵', text: '21時以降はスマホを別の部屋に置く' },
+      { icon: '🧘', text: '10分間のマインドフルネス瞑想' },
+      { icon: '🌿', text: '何もしない「ニクセン」の時間を15分つくる' },
+      { icon: '🔕', text: '全デバイスの通知をオフにして過ごす' },
+      { icon: '🪟', text: '窓の外をぼんやり眺める時間をつくる' },
+      { icon: '🫧', text: 'お風呂で仕事のことを考えないチャレンジ' },
+      { icon: '🕯️', text: '間接照明だけで過ごす時間をつくる' },
+      { icon: '🌌', text: 'ベランダで夜空を5分間眺める' },
+      { icon: '📺', text: 'テレビを消して静かに過ごす30分' },
+      { icon: '🎐', text: '自然音BGMを流してデジタルデトックス' },
+      { icon: '📦', text: '仕事カバンをクローゼットにしまう儀式' },
+      { icon: '🧹', text: '机の上を片付けて「リセット」する' },
+      { icon: '🌑', text: '部屋を暗くして目を休める' },
+      { icon: '☕', text: 'ハーブティーを淹れる「だけ」に集中する' },
+      { icon: '🧊', text: '冷たいタオルで顔を拭いて切り替える' },
+      { icon: '📓', text: '頭の中のモヤモヤを紙に書き出して手放す' },
+      { icon: '🌬️', text: 'ボックス呼吸法（4-4-4-4）を5分間' }
+    ],
+    R: [
+      { icon: '🛀', text: '38-40度のぬるめ半身浴を20分' },
+      { icon: '🧘', text: '寝る前のストレッチ10分' },
+      { icon: '💆', text: 'セルフヘッドマッサージ5分' },
+      { icon: '🦶', text: 'フォームローラーで足裏をほぐす' },
+      { icon: '🫁', text: '4-7-8呼吸法を5セット' },
+      { icon: '🧖', text: 'ホットアイマスクで目の疲れをケア' },
+      { icon: '🤲', text: '手湯（ハンドバス）で末端を温める' },
+      { icon: '🌡️', text: '湯たんぽで腰を温める' },
+      { icon: '😴', text: '漸進的筋弛緩法（PMR）を実施する' },
+      { icon: '🫠', text: 'ボディスキャン瞑想で全身をゆるめる' },
+      { icon: '👣', text: 'つま先からゆっくり脱力するリラクゼーション' },
+      { icon: '🎵', text: 'リラクゼーション音楽を聴きながら横になる' },
+      { icon: '🌸', text: 'アロマオイルで首筋をマッサージ' },
+      { icon: '🤸', text: '猫のポーズ・牛のポーズを5回ずつ' },
+      { icon: '🧣', text: 'ホットタオルで肩と首を温める' },
+      { icon: '🦴', text: '腰痛ケアのためのゆるストレッチ' },
+      { icon: '🫗', text: '白湯をゆっくり飲みながらリラックス' }
+    ],
+    A: [
+      { icon: '📖', text: '好きな本を30分読む' },
+      { icon: '🎮', text: '自分だけの趣味時間を30分確保する' },
+      { icon: '🎵', text: '好きな音楽アルバムを1枚通して聴く' },
+      { icon: '📓', text: '今夜の過ごし方を自分で「設計」する' },
+      { icon: '🧩', text: 'パズルやクロスワードに没頭する' },
+      { icon: '🍵', text: '自分で選んだ飲み物をゆっくり味わう' },
+      { icon: '🛋️', text: '「何もしなくていい時間」を自分に許可する' },
+      { icon: '🖊️', text: '好きなことを好きなだけ書く自由ノートタイム' },
+      { icon: '🎨', text: '色鉛筆やペンで自由に落書きする' },
+      { icon: '📺', text: '以前から気になっていた動画を1本観る' },
+      { icon: '🌙', text: '今夜は○時に寝ると自分で決めて守る' },
+      { icon: '🧴', text: '丁寧なスキンケアの時間を自分に贈る' },
+      { icon: '🗺️', text: '行きたい場所を調べて空想旅行する' },
+      { icon: '👕', text: '明日着る服を自分で選んで準備する' },
+      { icon: '🎧', text: 'Podcastの好きなエピソードを選んで聴く' },
+      { icon: '🧺', text: '自分のペースで小さな家事を1つだけやる' },
+      { icon: '🌜', text: '今夜の「自分ルール」を1つ決める' }
+    ],
+    M1: [
+      { icon: '📚', text: '興味のある分野の記事を1本読む' },
+      { icon: '🎓', text: '明日の授業の新しいアプローチを考える' },
+      { icon: '📝', text: '今日の気づきを3行で日記に書く' },
+      { icon: '🧠', text: '教育に関する新しい理論を1つ調べる' },
+      { icon: '🎯', text: '1週間の目標を振り返って進捗確認する' },
+      { icon: '💻', text: '新しいスキルの練習を15分する' },
+      { icon: '📋', text: '明日の授業プランを1つブラッシュアップ' },
+      { icon: '🎨', text: '新しい教材アイデアをスケッチする' },
+      { icon: '📊', text: '今月の自分の成長を振り返る' },
+      { icon: '🗂️', text: '学んだことを整理してノートにまとめる' },
+      { icon: '🎙️', text: '教育系Podcastを1エピソード聴く' },
+      { icon: '📐', text: '明日使えるワークシートを1つ改良する' },
+      { icon: '🔬', text: '生徒の反応パターンを分析してメモする' },
+      { icon: '✏️', text: '今日の授業の改善点を1つ書き出す' },
+      { icon: '🌐', text: '他校の優れた実践事例を1つ調べる' },
+      { icon: '📖', text: '教育書を10ページ読む' },
+      { icon: '🤔', text: '最近の「うまくいった教え方」を言語化する' }
+    ],
+    M2: [
+      { icon: '🙏', text: '今日の感謝を3つ書き出す' },
+      { icon: '💌', text: '家族への感謝の手紙を心の中で書く' },
+      { icon: '📸', text: '今日の良かった瞬間を写真で記録する' },
+      { icon: '🌟', text: '自分の仕事が生徒の人生にどう影響するか想像する' },
+      { icon: '🎁', text: '明日誰かにできる小さな親切を計画する' },
+      { icon: '📜', text: '自分の「人生のミッション」を思い出す' },
+      { icon: '🕊️', text: '今日の自分を「よくやった」と認める' },
+      { icon: '🌱', text: '教え子の成長エピソードを思い出して味わう' },
+      { icon: '✨', text: '今週の「意味があった」出来事を振り返る' },
+      { icon: '🤝', text: '困っている同僚を助けた経験を思い出す' },
+      { icon: '🏠', text: '家族と過ごせる時間のありがたさを感じる' },
+      { icon: '📝', text: '「なぜ教師を続けるのか」を3行で書く' },
+      { icon: '🌈', text: '今日のポジティブな出来事だけを思い出す' },
+      { icon: '🫶', text: '由香さんへの感謝を具体的に思い浮かべる' },
+      { icon: '💪', text: '自分の価値観に沿った行動を1つ思い出す' },
+      { icon: '🌻', text: '生徒からもらった嬉しい言葉を思い出す' },
+      { icon: '🎗️', text: '社会に貢献できている自分を認める' }
+    ],
+    A2: [
+      { icon: '🗣️', text: '由香さんと今日の出来事を15分話す' },
+      { icon: '👨‍👩‍👧', text: '子どもと一緒に遊ぶ時間を20分つくる' },
+      { icon: '🍲', text: '家族と食卓を囲んでゆっくり食事する' },
+      { icon: '📞', text: '両親や兄弟に5分だけ電話する' },
+      { icon: '📷', text: '家族の写真を一緒に見返す' },
+      { icon: '🎲', text: '家族でボードゲームやカードゲームをする' },
+      { icon: '🤗', text: '家族にハグする（3秒以上）' },
+      { icon: '📖', text: '子どもに絵本を読み聞かせる' },
+      { icon: '🚶', text: '家族と近所を散歩する' },
+      { icon: '✉️', text: '友人や同僚に感謝のLINEを送る' },
+      { icon: '🎵', text: '家族と一緒に好きな音楽を聴く' },
+      { icon: '🍳', text: '由香さんの料理を手伝う' },
+      { icon: '👂', text: '家族の話を遮らず最後まで聴く' },
+      { icon: '😊', text: '今日あった面白い話を家族にシェアする' },
+      { icon: '🧸', text: '子どもの「今日の一番」を聞いてあげる' },
+      { icon: '💬', text: '職場の仲間に明日かける言葉を考える' },
+      { icon: '🌙', text: '家族に「おやすみ」を丁寧に言う' }
+    ]
+  };
+
+  const DRAMMA_LABELS = {
+    D: 'Detachment', R: 'Relaxation', A: 'Autonomy',
+    M1: 'Mastery', M2: 'Meaning', A2: 'Affiliation'
+  };
+
+  const DRAMMA_DESCS = {
+    D: '心理的切り離し', R: 'リラクゼーション', A: '自律性',
+    M1: '習熟', M2: '意味・価値', A2: 'つながり'
+  };
+
   // ---- State ----
   let timerInterval = null;
   let messageInterval = null;
@@ -107,6 +353,7 @@
     checkin: document.getElementById('screen-checkin'),
     checkout: document.getElementById('screen-checkout'),
     weight:  document.getElementById('screen-weight'),
+    rest:    document.getElementById('screen-rest'),
     analytics: document.getElementById('screen-analytics')
   };
 
@@ -302,6 +549,7 @@
     if (name === 'weight') updateWeightScreen();
     if (name === 'checkin') initCheckinScreen();
     if (name === 'checkout') initCheckoutScreen();
+    if (name === 'rest') initRestScreen();
     if (name === 'analytics') updateAnalyticsScreen();
   }
 
@@ -795,12 +1043,13 @@
 
   // Checkin state
   const checkinState = {
-    weight: null, cpap: null, sleepHours: null,
-    vas_fatigue: 50, vas_pain: 50, tags: []
+    weight: null, cpap: null, sleepHours: null, sleepQuality: null,
+    vas_fatigue: 50, vas_pain: 50, tags: [],
+    dinnerType: null, dinnerTime: null
   };
 
   const checkoutState = {
-    vas_performance: 50, detached_evening: null
+    vas_performance: 50, reflection: null, logoutRituals: []
   };
 
   function getCheckouts() {
@@ -892,6 +1141,7 @@
 
   function resetCheckinForm() {
     checkinState.weight = null; checkinState.cpap = null; checkinState.sleepHours = null;
+    checkinState.sleepQuality = null; checkinState.dinnerType = null; checkinState.dinnerTime = null;
     checkinState.vas_fatigue = 50; checkinState.vas_pain = 50; checkinState.tags = [];
     
     const weightInput = document.getElementById('checkin-weight-raw');
@@ -918,14 +1168,118 @@
       if(doneMsg) doneMsg.style.display = 'none';
       if(form) form.style.display = 'block';
       resetCheckoutForm();
+      shuffleRituals();
     }
   }
 
+  // ---- Ritual Shuffle (12 rituals: 2 per DRAMMA category) ----
+  function pickRandom(arr, n) {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, n);
+  }
+
+  function shuffleRituals() {
+    const grid = document.getElementById('logout-ritual-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    checkoutState.logoutRituals = [];
+
+    const categories = ['D', 'R', 'A', 'M1', 'M2', 'A2'];
+    categories.forEach(cat => {
+      const picked = pickRandom(RITUAL_POOL[cat], 2);
+      picked.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'logout-ritual-btn';
+        btn.dataset.ritual = item.text;
+        btn.dataset.dramma = cat;
+        btn.innerHTML = `${item.icon} ${item.text}<div class="ritual-dramma-tag">${DRAMMA_LABELS[cat]}</div>`;
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('selected');
+          const ritual = btn.dataset.ritual;
+          if (btn.classList.contains('selected')) {
+            if (!checkoutState.logoutRituals.includes(ritual)) checkoutState.logoutRituals.push(ritual);
+          } else {
+            checkoutState.logoutRituals = checkoutState.logoutRituals.filter(r => r !== ritual);
+          }
+          if (navigator.vibrate) navigator.vibrate(20);
+        });
+        grid.appendChild(btn);
+      });
+    });
+  }
+
+  // ---- Rest Screen (休養入力) ----
+  const REST_KEY = 'revive_rest_plans';
+  const restState = { selectedPlans: [] };
+
+  function getRestRecords() {
+    try { return JSON.parse(localStorage.getItem(REST_KEY)) || []; } catch { return []; }
+  }
+
+  function getTodayRest() {
+    return getRestRecords().find(r => r.date === getTodayStr()) || null;
+  }
+
+  function initRestScreen() {
+    const today = getTodayRest();
+    const doneMsg = document.getElementById('rest-done-message');
+    const form = document.getElementById('rest-form');
+    if (today) {
+      if (doneMsg) doneMsg.style.display = 'block';
+      if (form) form.style.display = 'none';
+    } else {
+      if (doneMsg) doneMsg.style.display = 'none';
+      if (form) form.style.display = 'block';
+      shuffleRestPlans();
+    }
+  }
+
+  function shuffleRestPlans() {
+    const grid = document.getElementById('rest-plan-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    restState.selectedPlans = [];
+
+    const categories = ['D', 'R', 'A', 'M1', 'M2', 'A2'];
+    categories.forEach(cat => {
+      // Category header
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:0.7rem; font-weight:700; color:var(--accent-blue); margin-top:8px; margin-bottom:2px;';
+      header.textContent = `${DRAMMA_LABELS[cat]} — ${DRAMMA_DESCS[cat]}`;
+      grid.appendChild(header);
+
+      const picked = pickRandom(REST_PLAN_POOL[cat], 2);
+      const subGrid = document.createElement('div');
+      subGrid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:4px;';
+
+      picked.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'logout-ritual-btn';
+        btn.dataset.plan = item.text;
+        btn.dataset.dramma = cat;
+        btn.innerHTML = `${item.icon} ${item.text}`;
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('selected');
+          const plan = btn.dataset.plan;
+          if (btn.classList.contains('selected')) {
+            if (!restState.selectedPlans.includes(plan)) restState.selectedPlans.push(plan);
+          } else {
+            restState.selectedPlans = restState.selectedPlans.filter(p => p !== plan);
+          }
+          if (navigator.vibrate) navigator.vibrate(20);
+        });
+        subGrid.appendChild(btn);
+      });
+      grid.appendChild(subGrid);
+    });
+  }
+
   function resetCheckoutForm() {
-    checkoutState.vas_performance = 50; checkoutState.detached_evening = null;
-    document.querySelectorAll('.checkout-opt').forEach(b => b.classList.remove('selected'));
+    checkoutState.vas_performance = 50; checkoutState.reflection = null; checkoutState.logoutRituals = [];
     const vp = document.getElementById('vas-performance'); if(vp) vp.value = 50;
     const vpv = document.getElementById('vas-performance-val'); if(vpv) vpv.textContent = '50';
+    const ref = document.getElementById('checkout-reflection'); if(ref) ref.value = '';
+    document.querySelectorAll('.logout-ritual-btn').forEach(b => b.classList.remove('selected'));
   }
 
   // Weight smart input handler
@@ -959,11 +1313,7 @@
         btn.classList.add('selected');
         let val = btn.dataset.value;
         const numVal = parseFloat(val);
-        if (field === 'detached_evening') {
-          checkoutState[field] = isNaN(numVal) ? val : numVal;
-        } else {
-          checkinState[field] = isNaN(numVal) ? val : numVal;
-        }
+        checkinState[field] = isNaN(numVal) ? val : numVal;
         if (navigator.vibrate) navigator.vibrate(30);
       });
     });
@@ -982,6 +1332,23 @@
       if (navigator.vibrate) navigator.vibrate(20);
     });
   });
+
+  // Reflection textarea
+  const reflectionTextarea = document.getElementById('checkout-reflection');
+  if (reflectionTextarea) {
+    reflectionTextarea.addEventListener('input', () => {
+      checkoutState.reflection = reflectionTextarea.value || null;
+    });
+  }
+
+  // Shuffle button
+  const btnShuffle = document.getElementById('btn-shuffle-rituals');
+  if (btnShuffle) {
+    btnShuffle.addEventListener('click', () => {
+      shuffleRituals();
+      if (navigator.vibrate) navigator.vibrate(30);
+    });
+  }
 
   // VAS Sliders
   document.querySelectorAll('.vas-slider').forEach(slider => {
@@ -1079,6 +1446,38 @@
     });
   }
 
+  // ---- REST SCREEN EVENT HANDLERS ----
+  const btnRestSave = document.getElementById('btn-rest-save');
+  if (btnRestSave) {
+    btnRestSave.addEventListener('click', () => {
+      const records = getRestRecords();
+      const entry = { date: getTodayStr(), timestamp: new Date().toISOString(), plans: [...restState.selectedPlans] };
+      const idx = records.findIndex(r => r.date === entry.date);
+      if (idx >= 0) records[idx] = entry; else records.push(entry);
+      localStorage.setItem(REST_KEY, JSON.stringify(records));
+      syncToGas('rest', entry);
+      if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+      initRestScreen();
+    });
+  }
+
+  const btnRestRedo = document.getElementById('btn-rest-redo');
+  if (btnRestRedo) {
+    btnRestRedo.addEventListener('click', () => {
+      document.getElementById('rest-done-message').style.display = 'none';
+      document.getElementById('rest-form').style.display = 'block';
+      shuffleRestPlans();
+    });
+  }
+
+  const btnShuffleRest = document.getElementById('btn-shuffle-rest');
+  if (btnShuffleRest) {
+    btnShuffleRest.addEventListener('click', () => {
+      shuffleRestPlans();
+      if (navigator.vibrate) navigator.vibrate(30);
+    });
+  }
+
   // ---- ANALYTICS SCREEN ----
   let radarChartInstance = null;
 
@@ -1101,13 +1500,12 @@
     checkins.forEach(c => { (c.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1); });
 
     let scores = [
-      (tagCounts['半身浴']||0) + (tagCounts['自然な睡眠']||0),
-      (tagCounts['スマホ断ち']||0) + (tagCounts['何もしない']||0),
-      (tagCounts['スマホ断ち']||0),
-      (tagCounts['趣味の没頭']||0),
-      (tagCounts['有意義な対話']||0),
-      (tagCounts['有意義な対話']||0) + (tagCounts['恩送り']||0),
-      (tagCounts['恩送り']||0) + (tagCounts['何もしない']||0)
+      (tagCounts['半身浴']||0) + (tagCounts['自然な睡眠']||0) + (tagCounts['ストレッチ']||0),
+      (tagCounts['スマホ断ち']||0) + (tagCounts['何もしない']||0) + (tagCounts['通知オフ']||0),
+      (tagCounts['自分時間']||0) + (tagCounts['早めの就寝']||0),
+      (tagCounts['趣味の没頭']||0) + (tagCounts['読書']||0),
+      (tagCounts['有意義な対話']||0) + (tagCounts['子どもと遊ぶ']||0),
+      (tagCounts['恩送り']||0) + (tagCounts['由香ごはん']||0) + (tagCounts['感謝']||0)
     ];
     scores = scores.map(s => Math.min(100, Math.round((s / 7) * 100)));
 
@@ -1115,7 +1513,7 @@
     radarChartInstance = new Chart(ctx, {
       type: 'radar',
       data: {
-        labels: ['身体', '精神', '感覚', '創造', '感情', '社会', 'スピ'],
+        labels: ['D:切り離し', 'R:リラクゼーション', 'A:自律性', 'M:習熟', 'A:つながり', 'M:意味'],
         datasets: [{
           label: '休養充足度 (%)',
           data: scores,
@@ -1145,37 +1543,91 @@
 
   function renderDramma() {
     const checkins = getCheckins().slice(-7);
-    const tagCounts = {};
-    checkins.forEach(c => { (c.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1); });
+    const checkouts = getCheckouts().slice(-7);
+    const rests = getRestRecords().slice(-7);
+
+    // Morning tag counts mapped to DRAMMA
+    const morningDrammaMap = {
+      D: ['スマホ断ち', '何もしない', '通知オフ'],
+      R: ['半身浴', '自然な睡眠', 'ストレッチ'],
+      A: ['自分時間', '早めの就寝'],
+      M1: ['趣味の没頭', '読書'],
+      M2: ['恩送り', '由香ごはん', '感謝'],
+      A2: ['有意義な対話', '子どもと遊ぶ']
+    };
+
+    const morningDrammaCounts = {};
+    checkins.forEach(c => {
+      (c.tags || []).forEach(tag => {
+        Object.keys(morningDrammaMap).forEach(cat => {
+          if (morningDrammaMap[cat].includes(tag)) {
+            morningDrammaCounts[cat] = (morningDrammaCounts[cat] || 0) + 1;
+          }
+        });
+      });
+    });
+
+    // Evening ritual counts mapped to DRAMMA
+    const eveningDrammaCounts = {};
+    checkouts.forEach(c => {
+      (c.logoutRituals || []).forEach(ritualText => {
+        Object.keys(RITUAL_POOL).forEach(cat => {
+          if (RITUAL_POOL[cat].some(r => r.text === ritualText)) {
+            eveningDrammaCounts[cat] = (eveningDrammaCounts[cat] || 0) + 1;
+          }
+        });
+      });
+    });
+
+    // Rest plan counts mapped to DRAMMA
+    rests.forEach(r => {
+      (r.plans || []).forEach(planText => {
+        Object.keys(REST_PLAN_POOL).forEach(cat => {
+          if (REST_PLAN_POOL[cat].some(p => p.text === planText)) {
+            eveningDrammaCounts[cat] = (eveningDrammaCounts[cat] || 0) + 1;
+          }
+        });
+      });
+    });
 
     const drammaConfig = [
-      { id: 'D', label: 'Detachment', desc: '心理的切り離し', tags: ['スマホ断ち', '何もしない'] },
-      { id: 'R', label: 'Relaxation', desc: 'リラクゼーション', tags: ['半身浴', '自然な睡眠'] },
-      { id: 'A', label: 'Autonomy', desc: '自律性（自己決定）', tags: ['何もしない', 'スマホ断ち'] },
-      { id: 'M1', label: 'Mastery', desc: '習熟（スキルアップ）', tags: ['趣味の没頭'] },
-      { id: 'M2', label: 'Meaning', desc: '意味（価値）', tags: ['恩送り', '由香ごはん'] },
-      { id: 'A2', label: 'Affiliation', desc: 'つながり', tags: ['有意義な対話', '由香ごはん'] }
+      { id: 'D', label: 'Detachment', desc: '心理的切り離し' },
+      { id: 'R', label: 'Relaxation', desc: 'リラクゼーション' },
+      { id: 'A', label: 'Autonomy', desc: '自律性（自己決定）' },
+      { id: 'M1', label: 'Mastery', desc: '習熟（スキルアップ）' },
+      { id: 'M2', label: 'Meaning', desc: '意味（価値）' },
+      { id: 'A2', label: 'Affiliation', desc: 'つながり' }
     ];
 
     const container = document.getElementById('dramma-bars-container');
     if (!container) return;
-    container.innerHTML = '';
+
+    container.innerHTML = `
+      <div class="dramma-legend">
+        <span><span class="dramma-legend-dot" style="background:var(--accent-blue)"></span>朝の振り返り</span>
+        <span><span class="dramma-legend-dot" style="background:var(--accent-green)"></span>夜のリチュアル＆休養</span>
+      </div>
+    `;
 
     drammaConfig.forEach(d => {
-      let score = 0;
-      d.tags.forEach(t => score += (tagCounts[t] || 0));
-      let pct = Math.min(100, Math.round((score / 7) * 100));
-      
+      let morningScore = morningDrammaCounts[d.id] || 0;
+      let eveningScore = eveningDrammaCounts[d.id] || 0;
+
+      let totalScore = morningScore + eveningScore;
+      let totalPct = Math.min(100, Math.round((totalScore / 7) * 100));
+      let morningPct = totalScore > 0 ? Math.round((morningScore / totalScore) * totalPct) : 0;
+      let eveningPct = totalPct - morningPct;
+
       const item = document.createElement('div');
       item.className = 'dramma-item';
       item.innerHTML = `
         <div class="dramma-header">
           <span>${d.id}: ${d.label}</span>
-          <span>${pct}%</span>
+          <span>${totalPct}%</span>
         </div>
         <div class="dramma-desc">${d.desc}</div>
         <div class="dramma-bar-bg">
-          <div class="dramma-bar-fill" style="width: ${pct}%"></div>
+          <span class="dramma-bar-fill-morning" style="width:${morningPct}%"></span><span class="dramma-bar-fill-evening" style="width:${eveningPct}%"></span>
         </div>
       `;
       container.appendChild(item);

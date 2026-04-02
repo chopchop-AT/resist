@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a0e1a">
-  <title>RESIST - 生命エネルギー最適化</title>
+  <title>REVIVE - Personal Health OS</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,8 +20,8 @@
   <!-- ===== HOME SCREEN ===== -->
   <div id="screen-home" class="screen active">
     <div class="home-header">
-      <div class="app-title">RESIST</div>
-      <div class="app-subtitle">食欲と疲労に、負けない。</div>
+      <div class="app-title">REVIVE</div>
+      <div class="app-subtitle">毎日の活力を、取り戻す。</div>
     </div>
 
     <div id="home-latest-badge" class="home-badge-preview" style="display:none">
@@ -164,6 +164,52 @@
           </div>
         </div>
 
+        <!-- 睡眠の質 -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">😴 睡眠の質</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-option-group" data-field="sleepQuality" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+              <button class="checkin-option-btn" data-value="great">✨ すっきり</button>
+              <button class="checkin-option-btn" data-value="ok">🙂 まあまあ</button>
+              <button class="checkin-option-btn" data-value="light">😐 浅い</button>
+              <button class="checkin-option-btn" data-value="terrible">😩 最悪</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 前日の夕食 -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🍽️ 前日の生活習慣</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">昨夜の夕食は？</div>
+            <div class="checkin-option-group" data-field="dinnerType" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+              <button class="checkin-option-btn" data-value="yuka">🍲 ゆかさんのご飯</button>
+              <button class="checkin-option-btn" data-value="eating_out">🍽️ 外食</button>
+              <button class="checkin-option-btn" data-value="eating_out_alcohol">🍺 外食&アルコール</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">夕食の時間は？</div>
+            <div class="checkin-option-group" data-field="dinnerTime" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+              <button class="checkin-option-btn" data-value="before19">⏰ 19時前</button>
+              <button class="checkin-option-btn" data-value="19to21">🕖 19-21時</button>
+              <button class="checkin-option-btn" data-value="after21">🌙 21時以降</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 健康習慣チェックリスト -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">✅ 今日の健康習慣（複数選択OK）</div>
+          <div class="checkin-tags-grid">
+            <button class="checkin-tag-btn" data-tag="朝ウォーキング">🚶 朝のウォーキング</button>
+            <button class="checkin-tag-btn" data-tag="夜ストレッチ">🧘 夜のストレッチ</button>
+            <button class="checkin-tag-btn" data-tag="ジャーナリング">📓 ジャーナリング</button>
+            <button class="checkin-tag-btn" data-tag="間食なし">🚫 間食なし</button>
+          </div>
+        </div>
+
         <!-- 疲労と痛み (VAS) -->
         <div class="checkin-section">
           <div class="checkin-section-title">📊 疲労と痛みの定点観測 (VAS)</div>
@@ -193,19 +239,60 @@
           </div>
         </div>
 
-        <!-- 前夜の休養行動タグ (複数選択) -->
+        <!-- 前夜の休養行動タグ (DRAMMA連動・複数選択) -->
         <div class="checkin-section">
           <div class="checkin-section-title">💡 昨晩の休養アクション (複数選択OK)</div>
-          <div class="checkin-tags-grid">
-            <!-- Detachment / Niksen / Detox / Drama -->
-            <button class="checkin-tag-btn" data-tag="スマホ断ち">📱 スマホ断ち</button>
-            <button class="checkin-tag-btn" data-tag="半身浴">🛀 ぬるめ半身浴</button>
-            <button class="checkin-tag-btn" data-tag="由香ごはん">🍲 由香ごはん</button>
-            <button class="checkin-tag-btn" data-tag="何もしない">💭 何もしない時間</button>
-            <button class="checkin-tag-btn" data-tag="有意義な対話">🗣 家族との対話</button>
-            <button class="checkin-tag-btn" data-tag="自然な睡眠">🌙 熟睡できた</button>
-            <button class="checkin-tag-btn" data-tag="趣味の没頭">🎨 趣味・学び</button>
-            <button class="checkin-tag-btn" data-tag="恩送り">🎁 利他的な行動</button>
+          <div class="checkin-rating-label" style="font-size:0.75rem; margin-bottom:8px; padding:0 4px;">DRAMMAモデルの6つの視点で、昨晩の休養を振り返りましょう</div>
+
+          <div class="checkin-rating-group" style="margin-bottom:6px;">
+            <div class="checkin-rating-label" style="font-size:0.7rem; color:var(--accent-blue);">D: Detachment — 心理的切り離し</div>
+            <div class="checkin-tags-grid">
+              <button class="checkin-tag-btn" data-tag="スマホ断ち">📱 スマホ断ち</button>
+              <button class="checkin-tag-btn" data-tag="何もしない">💭 何もしない時間</button>
+              <button class="checkin-tag-btn" data-tag="通知オフ">🔇 通知オフで過ごした</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group" style="margin-bottom:6px;">
+            <div class="checkin-rating-label" style="font-size:0.7rem; color:var(--accent-blue);">R: Relaxation — リラクゼーション</div>
+            <div class="checkin-tags-grid">
+              <button class="checkin-tag-btn" data-tag="半身浴">🛀 ぬるめ半身浴</button>
+              <button class="checkin-tag-btn" data-tag="自然な睡眠">🌙 熟睡できた</button>
+              <button class="checkin-tag-btn" data-tag="ストレッチ">🧘 ストレッチ</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group" style="margin-bottom:6px;">
+            <div class="checkin-rating-label" style="font-size:0.7rem; color:var(--accent-blue);">A: Autonomy — 自律性</div>
+            <div class="checkin-tags-grid">
+              <button class="checkin-tag-btn" data-tag="自分時間">🎯 自分で決めた時間を過ごした</button>
+              <button class="checkin-tag-btn" data-tag="早めの就寝">🌙 自分で決めた時間に寝た</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group" style="margin-bottom:6px;">
+            <div class="checkin-rating-label" style="font-size:0.7rem; color:var(--accent-blue);">M: Mastery — 習熟</div>
+            <div class="checkin-tags-grid">
+              <button class="checkin-tag-btn" data-tag="趣味の没頭">🎨 趣味・学び</button>
+              <button class="checkin-tag-btn" data-tag="読書">📚 読書・インプット</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group" style="margin-bottom:6px;">
+            <div class="checkin-rating-label" style="font-size:0.7rem; color:var(--accent-blue);">M: Meaning — 意味・価値</div>
+            <div class="checkin-tags-grid">
+              <button class="checkin-tag-btn" data-tag="恩送り">🎁 利他的な行動</button>
+              <button class="checkin-tag-btn" data-tag="由香ごはん">🍲 由香ごはん</button>
+              <button class="checkin-tag-btn" data-tag="感謝">🙏 感謝の時間</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group" style="margin-bottom:6px;">
+            <div class="checkin-rating-label" style="font-size:0.7rem; color:var(--accent-blue);">A: Affiliation — つながり</div>
+            <div class="checkin-tags-grid">
+              <button class="checkin-tag-btn" data-tag="有意義な対話">🗣 家族との対話</button>
+              <button class="checkin-tag-btn" data-tag="子どもと遊ぶ">👨‍👩‍👧 子どもと過ごした</button>
+            </div>
           </div>
         </div>
 
@@ -245,17 +332,26 @@
           </div>
         </div>
 
-        <!-- 帰宅・バッファ -->
+        <!-- 今日のふりかえり -->
         <div class="checkin-section">
-          <div class="checkin-section-title">🚆 終業リチュアル</div>
+          <div class="checkin-section-title">📝 今日のふりかえり</div>
           <div class="checkin-rating-group">
-            <div class="checkin-rating-label">仕事モードから完全にログアウトできましたか？</div>
-            <div class="checkin-option-group" data-field="detached_evening" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-              <button class="checkin-option-btn checkout-opt" data-value="1" style="text-align:center">✅ 完全にオフ！</button>
-              <button class="checkin-option-btn checkout-opt" data-value="0" style="text-align:center">🤔 まだ仕事脳</button>
-            </div>
+            <div class="checkin-rating-label" style="font-size:0.85rem">今日の気づき、感謝、明日への一言など自由に</div>
+            <textarea class="checkout-reflection-textarea" id="checkout-reflection" placeholder="何でも一言..."></textarea>
           </div>
-          
+        </div>
+
+        <!-- 終業リチュアル (DRAMMA連動) -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🚆 終業リチュアル（実行したものをタップ）</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">各カテゴリから今日のリチュアルが提示されます</div>
+            <div class="logout-ritual-grid" id="logout-ritual-grid">
+              <!-- JS が shuffleRituals() で動的に生成 -->
+            </div>
+            <button class="ritual-shuffle-btn" id="btn-shuffle-rituals">🔀 別のリチュアルを見る</button>
+          </div>
+
           <div class="checkout-message-box">
             天満橋から南森町までの間、少しだけ目を閉じて深呼吸してみましょう。ここからは完全に「あなたの時間」です。
           </div>
@@ -378,6 +474,38 @@
     </div>
   </div>
 
+  <!-- ===== REST INPUT SCREEN (休養入力) ===== -->
+  <div id="screen-rest" class="screen">
+    <div class="checkin-header">
+      <div class="checkin-greeting">🌿 今夜の休養プラン</div>
+      <div class="checkin-subtitle">DRAMMAモデルに基づく、あなた専用の回復メニュー</div>
+    </div>
+
+    <div class="checkin-scroll">
+      <div id="rest-done-message" class="checkin-done-msg" style="display:none">
+        <span class="checkin-done-icon">✅</span>
+        <div class="checkin-done-text">今夜の休養プランは記録済みです。ゆっくり休みましょう！</div>
+        <button class="checkin-redo-btn" id="btn-rest-redo">選び直す</button>
+      </div>
+
+      <div id="rest-form">
+        <div class="checkin-section">
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label" style="font-size:0.85rem">各DRAMMA項目から2つずつ、今夜おすすめの休養プランが提案されます。<br>実行するものをタップしてください。</div>
+            <div class="logout-ritual-grid" id="rest-plan-grid" style="grid-template-columns: 1fr">
+              <!-- JS が shuffleRestPlans() で動的に生成 -->
+            </div>
+            <button class="ritual-shuffle-btn" id="btn-shuffle-rest">🔀 別のプランを見る</button>
+          </div>
+        </div>
+
+        <button class="checkin-save-btn" id="btn-rest-save" style="background: linear-gradient(135deg, #34d399, #10b981);">
+          🌿 休養プランを記録する
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== BOTTOM NAVIGATION ===== -->
   <nav class="bottom-nav">
     <button class="nav-btn active" data-screen="home">
@@ -392,13 +520,13 @@
       <span class="nav-icon">🌙</span>
       <span class="nav-label">夜入力</span>
     </button>
-    <button class="nav-btn" data-screen="weight">
-      <span class="nav-icon">⚖️</span>
-      <span class="nav-label">体重</span>
+    <button class="nav-btn" data-screen="rest">
+      <span class="nav-icon">🌿</span>
+      <span class="nav-label">休養</span>
     </button>
     <button class="nav-btn" data-screen="analytics">
       <span class="nav-icon">📊</span>
-      <span class="nav-label">分析・記録</span>
+      <span class="nav-label">分析</span>
     </button>
   </nav>
 

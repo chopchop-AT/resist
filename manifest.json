@@ -1,7 +1,7 @@
 {
-  "name": "RESIST - 食欲撃退",
-  "short_name": "RESIST",
-  "description": "食欲の衝動に打ち勝つためのアプリ",
+  "name": "REVIVE - Personal Health OS",
+  "short_name": "REVIVE",
+  "description": "毎日の回復と活力を取り戻すパーソナルHealth OS",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a0e1a",
