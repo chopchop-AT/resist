@@ -183,7 +183,7 @@
           <div class="checkin-rating-group">
             <div class="checkin-rating-label">昨夜の夕食は？</div>
             <div class="checkin-option-group" data-field="dinnerType" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
-              <button class="checkin-option-btn" data-value="yuka">🍲 ゆかさんのご飯</button>
+              <button class="checkin-option-btn" data-value="yuka">🍲 ゆかごはん</button>
               <button class="checkin-option-btn" data-value="eating_out">🍽️ 外食</button>
               <button class="checkin-option-btn" data-value="eating_out_alcohol">🍺 外食&アルコール</button>
             </div>
@@ -207,6 +207,7 @@
             <button class="checkin-tag-btn" data-tag="夜ストレッチ">🧘 夜のストレッチ</button>
             <button class="checkin-tag-btn" data-tag="ジャーナリング">📓 ジャーナリング</button>
             <button class="checkin-tag-btn" data-tag="間食なし">🚫 間食なし</button>
+            <button class="checkin-tag-btn" data-tag="サプリメント">💊 サプリメント</button>
           </div>
         </div>
 
@@ -357,8 +358,24 @@
           </div>
         </div>
 
+        <!-- 1日の総合スコア -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🏆 今日の総合スコア</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label" style="font-size:0.85rem">健康・仕事・回復すべて含めて、今日は100点中何点でしたか？</div>
+            <div class="vas-container" style="margin-top:20px;">
+              <input type="range" class="vas-slider slider-gold" id="vas-daily-score" min="0" max="100" value="50">
+              <div class="vas-labels">
+                <span>最悪の日😩</span>
+                <span id="vas-daily-score-val" style="font-size:1.4rem; font-weight:900; color:var(--accent-gold);">50</span>
+                <span>最高の日🌟</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <button class="checkin-save-btn" id="btn-checkout-save" style="background: linear-gradient(135deg, #60a5fa, #3b82f6);">
-          🚪 仕事からログアウト (保存)
+          🚪 今日を締めくくる (保存)
         </button>
       </div>
     </div>

@@ -1049,7 +1049,7 @@
   };
 
   const checkoutState = {
-    vas_performance: 50, reflection: null, logoutRituals: []
+    vas_performance: 50, reflection: null, logoutRituals: [], dailyScore: 50
   };
 
   function getCheckouts() {
@@ -1275,9 +1275,11 @@
   }
 
   function resetCheckoutForm() {
-    checkoutState.vas_performance = 50; checkoutState.reflection = null; checkoutState.logoutRituals = [];
+    checkoutState.vas_performance = 50; checkoutState.reflection = null; checkoutState.logoutRituals = []; checkoutState.dailyScore = 50;
     const vp = document.getElementById('vas-performance'); if(vp) vp.value = 50;
     const vpv = document.getElementById('vas-performance-val'); if(vpv) vpv.textContent = '50';
+    const ds = document.getElementById('vas-daily-score'); if(ds) ds.value = 50;
+    const dsv = document.getElementById('vas-daily-score-val'); if(dsv) dsv.textContent = '50';
     const ref = document.getElementById('checkout-reflection'); if(ref) ref.value = '';
     document.querySelectorAll('.logout-ritual-btn').forEach(b => b.classList.remove('selected'));
   }
@@ -1359,6 +1361,7 @@
       if (e.target.id === 'vas-fatigue') checkinState.vas_fatigue = val;
       if (e.target.id === 'vas-pain') checkinState.vas_pain = val;
       if (e.target.id === 'vas-performance') checkoutState.vas_performance = val;
+      if (e.target.id === 'vas-daily-score') checkoutState.dailyScore = val;
     });
   });
 
