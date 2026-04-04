@@ -432,8 +432,10 @@
     syncToGas('victory', entry);
   }
 
+  // REVIVE日: 午前4時を1日の切り替え時刻とする
+  // 0:00〜3:59の入力は前日として扱う
   function getTodayStr() {
-    const d = new Date();
+    const d = new Date(Date.now() - 4 * 60 * 60 * 1000);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
@@ -1679,6 +1681,8 @@
   // ---- ANALYTICS SCREEN ----
   let radarChartInstance = null;
 
+  let weightChartInstance = null;
+
   function updateAnalyticsScreen() {
     document.getElementById('hist-total').textContent = getTotalWins();
     document.getElementById('hist-streak').textContent = getStreak();
@@ -1687,7 +1691,76 @@
     renderHeatmap();
     drawRadarChart();
     renderDramma();
+    renderAnalyticsWeightChart();
     generateBestResetFormula();
+  }
+
+  function renderAnalyticsWeightChart() {
+    const canvas = document.getElementById('analytics-weight-chart');
+    const emptyMsg = document.getElementById('analytics-weight-empty');
+    const summaryEl = document.getElementById('weight-analytics-summary');
+    if (!canvas) return;
+
+    const weights = getWeights();
+
+    // Summary
+    if (summaryEl) {
+      if (weights.length > 0) {
+        const latest = weights[weights.length - 1];
+        let diffHtml = '';
+        if (weights.length >= 2) {
+          const diff = latest.kg - weights[0].kg;
+          const sign = diff < 0 ? '' : '+';
+          const cls = diff < 0 ? 'color:var(--accent-green)' : diff > 0 ? 'color:var(--accent-red)' : '';
+          diffHtml = `<div class="weight-stat-card" style="flex:1;background:var(--bg-card);border-radius:var(--radius-md);padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.05)"><span style="font-size:1.1rem;font-weight:800;${cls}">${sign}${diff.toFixed(1)}kg</span><span style="display:block;font-size:0.65rem;color:var(--text-secondary);margin-top:2px">増減</span></div>`;
+        }
+        summaryEl.innerHTML = `<div class="weight-stat-card" style="flex:1;background:var(--bg-card);border-radius:var(--radius-md);padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.05)"><span style="font-size:1.1rem;font-weight:800">${latest.kg.toFixed(1)}kg</span><span style="display:block;font-size:0.65rem;color:var(--text-secondary);margin-top:2px">最新</span></div>${diffHtml}<div class="weight-stat-card" style="flex:1;background:var(--bg-card);border-radius:var(--radius-md);padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.05)"><span style="font-size:1.1rem;font-weight:800">${weights.length}</span><span style="display:block;font-size:0.65rem;color:var(--text-secondary);margin-top:2px">記録数</span></div>`;
+      } else {
+        summaryEl.innerHTML = '';
+      }
+    }
+
+    if (weights.length < 2) {
+      canvas.style.display = 'none';
+      if (emptyMsg) emptyMsg.style.display = 'flex';
+      return;
+    }
+
+    canvas.style.display = 'block';
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    const labels = weights.map(w => { const d = new Date(w.date); return `${d.getMonth()+1}/${d.getDate()}`; });
+    const data = weights.map(w => w.kg);
+
+    if (weightChartInstance) weightChartInstance.destroy();
+    weightChartInstance = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: '体重 (kg)',
+          data,
+          borderColor: '#60a5fa',
+          backgroundColor: 'rgba(96,165,250,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#60a5fa',
+          pointBorderColor: '#0a0e1a',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          borderWidth: 2.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: '#8892a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#8892a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
   }
 
   function drawRadarChart() {
