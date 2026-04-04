@@ -484,6 +484,11 @@
       <div class="analytics-section">
         <div class="section-title">⚖️ 体重トレンド</div>
         <div id="weight-analytics-summary" style="display:flex; gap:10px; margin-bottom:10px;"></div>
+        <div class="weight-range-tabs">
+          <button class="weight-range-btn active" data-range="7">1週間</button>
+          <button class="weight-range-btn" data-range="30">1ヶ月</button>
+          <button class="weight-range-btn" data-range="365">1年間</button>
+        </div>
         <div class="weight-chart-container bg-card-style" style="height:200px; position:relative;">
           <canvas id="analytics-weight-chart"></canvas>
           <div class="weight-chart-empty" id="analytics-weight-empty" style="display:none">2日以上体重を記録するとグラフが表示されます</div>
@@ -510,6 +515,18 @@
       <div class="badges-section" style="padding:0;">
         <div class="section-title">🏆 獲得バッジ</div>
         <div class="badges-grid" id="badges-grid"></div>
+      </div>
+
+      <!-- Data Recovery -->
+      <div class="analytics-section" style="margin-top:30px;">
+        <div class="section-title">🔧 データ管理</div>
+        <div class="bg-card-style" style="text-align:center;">
+          <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.5;">旧バージョン（RESIST）のデータが残っている場合、<br>このボタンで新しいREVIVEに取り込めます</div>
+          <button class="checkin-save-btn" id="btn-data-recovery" style="background:linear-gradient(135deg, #a78bfa, #7c3aed); margin:0 auto; max-width:280px; font-size:0.9rem;">
+            🔄 旧データを復元する
+          </button>
+          <div id="recovery-result" style="margin-top:10px; font-size:0.78rem; color:var(--accent-green); display:none;"></div>
+        </div>
       </div>
 
     </div>

@@ -1869,3 +1869,28 @@ canvas#weight-chart { width: 100% !important; height: 100% !important; }
   font-size: 0.85rem;
   padding: 20px;
 }
+
+/* Weight Range Tabs */
+.weight-range-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.weight-range-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.weight-range-btn.active {
+  border-color: var(--accent-blue);
+  background: rgba(96,165,250,0.12);
+  color: var(--accent-blue);
+}

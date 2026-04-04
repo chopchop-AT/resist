@@ -1695,13 +1695,18 @@
     generateBestResetFormula();
   }
 
-  function renderAnalyticsWeightChart() {
+  let currentWeightRange = 7;
+
+  function renderAnalyticsWeightChart(rangeDays) {
+    if (rangeDays) currentWeightRange = rangeDays;
     const canvas = document.getElementById('analytics-weight-chart');
     const emptyMsg = document.getElementById('analytics-weight-empty');
     const summaryEl = document.getElementById('weight-analytics-summary');
     if (!canvas) return;
 
-    const weights = getWeights();
+    const allWeights = getWeights();
+    const cutoff = new Date(Date.now() - currentWeightRange * 86400000);
+    const weights = allWeights.filter(w => new Date(w.date) >= cutoff);
 
     // Summary
     if (summaryEl) {
@@ -1940,6 +1945,81 @@
     } else {
       el.textContent = 'データ収集中... 翌朝の疲労と行動パターンの相関を分析しています。';
     }
+  }
+
+  // ---- Weight Range Tabs ----
+  document.querySelectorAll('.weight-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.weight-range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAnalyticsWeightChart(parseInt(btn.dataset.range, 10));
+    });
+  });
+
+  // ---- Data Recovery (resist_* → revive_*) ----
+  const btnRecovery = document.getElementById('btn-data-recovery');
+  if (btnRecovery) {
+    btnRecovery.addEventListener('click', () => {
+      const resultEl = document.getElementById('recovery-result');
+      let recovered = 0;
+
+      const pairs = [
+        ['resist_victories', 'revive_victories'],
+        ['resist_weights', 'revive_weights'],
+        ['resist_badges', 'revive_badges'],
+        ['resist_special', 'revive_special'],
+        ['resist_checkins', 'revive_checkins'],
+        ['resist_checkouts', 'revive_checkouts'],
+        ['resist_sync_queue', 'revive_sync_queue']
+      ];
+
+      pairs.forEach(([oldKey, newKey]) => {
+        const oldData = localStorage.getItem(oldKey);
+        if (!oldData) return;
+
+        const newData = localStorage.getItem(newKey);
+        if (!newData || newData === '[]' || newData === '{}') {
+          // New key is empty — copy old data directly
+          localStorage.setItem(newKey, oldData);
+          recovered++;
+        } else {
+          // Both exist — merge arrays (deduplicate by date or timestamp)
+          try {
+            const oldArr = JSON.parse(oldData);
+            const newArr = JSON.parse(newData);
+            if (Array.isArray(oldArr) && Array.isArray(newArr)) {
+              const existingDates = new Set(newArr.map(item => item.date || item.id || JSON.stringify(item)));
+              let added = 0;
+              oldArr.forEach(item => {
+                const key = item.date || item.id || JSON.stringify(item);
+                if (!existingDates.has(key)) {
+                  newArr.push(item);
+                  added++;
+                }
+              });
+              if (added > 0) {
+                newArr.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+                localStorage.setItem(newKey, JSON.stringify(newArr));
+                recovered++;
+              }
+            }
+          } catch(e) { /* skip non-array data */ }
+        }
+      });
+
+      if (resultEl) {
+        resultEl.style.display = 'block';
+        if (recovered > 0) {
+          resultEl.textContent = `✅ ${recovered}件のデータを復元しました。画面を更新します...`;
+          resultEl.style.color = 'var(--accent-green)';
+          setTimeout(() => { updateAnalyticsScreen(); updateHomeStats(); }, 500);
+        } else {
+          resultEl.textContent = '旧データが見つからないか、すでに復元済みです';
+          resultEl.style.color = 'var(--text-secondary)';
+        }
+      }
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    });
   }
 
   // ---- Service Worker ----
