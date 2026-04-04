@@ -1956,68 +1956,133 @@
     });
   });
 
-  // ---- Data Recovery (resist_* → revive_*) ----
-  const btnRecovery = document.getElementById('btn-data-recovery');
-  if (btnRecovery) {
-    btnRecovery.addEventListener('click', () => {
+  // ---- Cloud Data Restore (GAS → localStorage) ----
+  const btnCloudRestore = document.getElementById('btn-cloud-restore');
+  if (btnCloudRestore) {
+    btnCloudRestore.addEventListener('click', async () => {
       const resultEl = document.getElementById('recovery-result');
-      let recovered = 0;
-
-      const pairs = [
-        ['resist_victories', 'revive_victories'],
-        ['resist_weights', 'revive_weights'],
-        ['resist_badges', 'revive_badges'],
-        ['resist_special', 'revive_special'],
-        ['resist_checkins', 'revive_checkins'],
-        ['resist_checkouts', 'revive_checkouts'],
-        ['resist_sync_queue', 'revive_sync_queue']
-      ];
-
-      pairs.forEach(([oldKey, newKey]) => {
-        const oldData = localStorage.getItem(oldKey);
-        if (!oldData) return;
-
-        const newData = localStorage.getItem(newKey);
-        if (!newData || newData === '[]' || newData === '{}') {
-          // New key is empty — copy old data directly
-          localStorage.setItem(newKey, oldData);
-          recovered++;
-        } else {
-          // Both exist — merge arrays (deduplicate by date or timestamp)
-          try {
-            const oldArr = JSON.parse(oldData);
-            const newArr = JSON.parse(newData);
-            if (Array.isArray(oldArr) && Array.isArray(newArr)) {
-              const existingDates = new Set(newArr.map(item => item.date || item.id || JSON.stringify(item)));
-              let added = 0;
-              oldArr.forEach(item => {
-                const key = item.date || item.id || JSON.stringify(item);
-                if (!existingDates.has(key)) {
-                  newArr.push(item);
-                  added++;
-                }
-              });
-              if (added > 0) {
-                newArr.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-                localStorage.setItem(newKey, JSON.stringify(newArr));
-                recovered++;
-              }
-            }
-          } catch(e) { /* skip non-array data */ }
-        }
-      });
-
       if (resultEl) {
         resultEl.style.display = 'block';
-        if (recovered > 0) {
-          resultEl.textContent = `✅ ${recovered}件のデータを復元しました。画面を更新します...`;
-          resultEl.style.color = 'var(--accent-green)';
-          setTimeout(() => { updateAnalyticsScreen(); updateHomeStats(); }, 500);
-        } else {
-          resultEl.textContent = '旧データが見つからないか、すでに復元済みです';
-          resultEl.style.color = 'var(--text-secondary)';
+        resultEl.textContent = '☁️ クラウドからデータを取得中...';
+        resultEl.style.color = 'var(--accent-blue)';
+      }
+      btnCloudRestore.disabled = true;
+
+      try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        let stats = { victories: 0, weights: 0, checkins: 0, badges: 0 };
+
+        // --- Victories ---
+        if (data.Victories && data.Victories.length > 0) {
+          const existing = getVictories();
+          const existingSet = new Set(existing.map(v => v.date));
+          const newVics = [];
+          const seen = new Set();
+          data.Victories.forEach(v => {
+            const ts = v.Timestamp || v.timestamp;
+            if (!ts || seen.has(ts)) return;
+            seen.add(ts);
+            const entry = { date: new Date(ts).toISOString(), craving: v.Craving || v.craving || '', duration: v['Duration(s)'] || v.duration || 0 };
+            if (!existingSet.has(entry.date)) newVics.push(entry);
+          });
+          if (newVics.length > 0) {
+            const merged = [...existing, ...newVics].sort((a, b) => a.date.localeCompare(b.date));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            stats.victories = newVics.length;
+          }
+        }
+
+        // --- Weights (from Checkin data) ---
+        if (data.Checkin && data.Checkin.length > 0) {
+          const existingW = getWeights();
+          const existingWDates = new Set(existingW.map(w => getDateStr(w.date)));
+          const existingC = getCheckins();
+          const existingCDates = new Set(existingC.map(c => c.date));
+          const newWeights = [];
+          const newCheckins = [];
+          const seenDates = new Set();
+
+          data.Checkin.forEach(c => {
+            const ts = c.Timestamp || c.timestamp;
+            const dateRaw = c.Date || c.date || ts;
+            if (!dateRaw) return;
+            const dateStr = getDateStr(new Date(dateRaw));
+            if (seenDates.has(dateStr)) return;
+            seenDates.add(dateStr);
+
+            // Weight
+            const kg = parseFloat(c.Weight || c.weight);
+            if (kg && kg > 30 && kg < 300 && !existingWDates.has(dateStr)) {
+              newWeights.push({ date: new Date(ts || dateRaw).toISOString(), kg });
+            }
+
+            // Checkin record
+            if (!existingCDates.has(dateStr)) {
+              const entry = {
+                date: dateStr,
+                timestamp: ts || new Date(dateRaw).toISOString(),
+                weight: kg || null,
+                sleepHours: parseFloat(c.SleepHours || c.sleepHours) || null,
+                sleepQuality: c.SleepQuality || c.sleepQuality || null,
+                cpap: null,
+                vas_fatigue: 50,
+                vas_pain: 50,
+                tags: [],
+                dinnerType: c.DietBase || c.dinnerType || null,
+                dinnerTime: null
+              };
+              newCheckins.push(entry);
+            }
+          });
+
+          if (newWeights.length > 0) {
+            const merged = [...existingW, ...newWeights].sort((a, b) => a.date.localeCompare(b.date));
+            localStorage.setItem(WEIGHT_KEY, JSON.stringify(merged));
+            stats.weights = newWeights.length;
+          }
+          if (newCheckins.length > 0) {
+            const merged = [...existingC, ...newCheckins].sort((a, b) => a.date.localeCompare(b.date));
+            localStorage.setItem(CHECKIN_KEY, JSON.stringify(merged));
+            stats.checkins = newCheckins.length;
+          }
+        }
+
+        // --- Badges ---
+        if (data.Badges && data.Badges.length > 0) {
+          const existing = getEarnedBadges();
+          const existingSet = new Set(existing);
+          const newBadgeIds = [];
+          data.Badges.forEach(b => {
+            const id = b.BadgeID || b.badgeId;
+            if (id && !existingSet.has(id)) { newBadgeIds.push(id); existingSet.add(id); }
+          });
+          if (newBadgeIds.length > 0) {
+            localStorage.setItem(BADGES_KEY, JSON.stringify([...existing, ...newBadgeIds]));
+            stats.badges = newBadgeIds.length;
+          }
+        }
+
+        const total = stats.victories + stats.weights + stats.checkins + stats.badges;
+        if (resultEl) {
+          if (total > 0) {
+            resultEl.innerHTML = `✅ 復元完了！<br>勝利記録: ${stats.victories}件, 体重: ${stats.weights}件, チェックイン: ${stats.checkins}件, バッジ: ${stats.badges}件`;
+            resultEl.style.color = 'var(--accent-green)';
+            setTimeout(() => { updateAnalyticsScreen(); updateHomeStats(); }, 500);
+          } else {
+            resultEl.textContent = 'すべてのクラウドデータは復元済みです';
+            resultEl.style.color = 'var(--text-secondary)';
+          }
+        }
+      } catch (err) {
+        if (resultEl) {
+          resultEl.textContent = '❌ 復元に失敗しました: ' + err.message;
+          resultEl.style.color = 'var(--accent-red)';
         }
       }
+      btnCloudRestore.disabled = false;
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     });
   }
