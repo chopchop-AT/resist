@@ -1765,13 +1765,16 @@
         }
 
         // --- Checkin + Weight (旧: Checkin / 新: 朝チェックイン) ---
-        const ciSheet = data['朝チェックイン'] || data['Checkin'] || [];
+        // 両方のシートからデータを統合
+        const ciSheetNew = data['朝チェックイン'] || [];
+        const ciSheetOld = data['Checkin'] || [];
+        const ciSheet = [...ciSheetNew, ...ciSheetOld];
         if (ciSheet.length > 0) {
           const existingW = getWeights();
-          const existingWDates = new Set(existingW.map(w => getDateStr(w.date)));
+          const weightMap = {};
+          existingW.forEach(w => { weightMap[getDateStr(w.date)] = w; });
           const existingC = getCheckins();
           const existingCDates = new Set(existingC.map(c => c.date));
-          const newWeights = [];
           const newCheckins = [];
           const seenDates = new Set();
 
@@ -1783,10 +1786,10 @@
             if (seenDates.has(dateStr)) return;
             seenDates.add(dateStr);
 
-            // Weight
+            // Weight — 上書きマージ（クラウドのデータで既存を更新）
             const kg = parseFloat(c['体重(kg)'] || c['Weight'] || c.weight);
-            if (kg && kg > 30 && kg < 300 && !existingWDates.has(dateStr)) {
-              newWeights.push({ date: new Date(ts || dateRaw).toISOString(), kg });
+            if (kg && kg > 30 && kg < 300) {
+              weightMap[dateStr] = { date: new Date(ts || dateRaw).toISOString(), kg };
             }
 
             // Checkin record
@@ -1819,11 +1822,12 @@
             }
           });
 
-          if (newWeights.length > 0) {
-            const merged = [...existingW, ...newWeights].sort((a, b) => a.date.localeCompare(b.date));
-            localStorage.setItem(WEIGHT_KEY, JSON.stringify(merged));
-            stats.weights = newWeights.length;
-          }
+          // 体重: マップから配列に戻して保存（既存+クラウドの全データ）
+          const allWeights = Object.values(weightMap).sort((a, b) => a.date.localeCompare(b.date));
+          localStorage.setItem(WEIGHT_KEY, JSON.stringify(allWeights));
+          stats.weights = allWeights.length - existingW.length;
+          if (stats.weights < 0) stats.weights = 0;
+
           if (newCheckins.length > 0) {
             const merged = [...existingC, ...newCheckins].sort((a, b) => a.date.localeCompare(b.date));
             localStorage.setItem(CHECKIN_KEY, JSON.stringify(merged));
