@@ -1957,6 +1957,7 @@
   });
 
   // ---- Cloud Data Restore (GAS → localStorage) ----
+  // 旧形式(Victories/Checkin/Badges)と新形式(SOS勝利記録/朝チェックイン/バッジ)の両方に対応
   const btnCloudRestore = document.getElementById('btn-cloud-restore');
   if (btnCloudRestore) {
     btnCloudRestore.addEventListener('click', async () => {
@@ -1973,19 +1974,26 @@
         const data = await res.json();
         if (data.error) throw new Error(data.error);
 
-        let stats = { victories: 0, weights: 0, checkins: 0, badges: 0 };
+        let stats = { victories: 0, weights: 0, checkins: 0, checkouts: 0, badges: 0 };
 
-        // --- Victories ---
-        if (data.Victories && data.Victories.length > 0) {
+        // --- Victories (旧: Victories / 新: SOS勝利記録) ---
+        const vicSheet = data['SOS勝利記録'] || data['Victories'] || [];
+        if (vicSheet.length > 0) {
           const existing = getVictories();
           const existingSet = new Set(existing.map(v => v.date));
           const newVics = [];
           const seen = new Set();
-          data.Victories.forEach(v => {
-            const ts = v.Timestamp || v.timestamp;
-            if (!ts || seen.has(ts)) return;
-            seen.add(ts);
-            const entry = { date: new Date(ts).toISOString(), craving: v.Craving || v.craving || '', duration: v['Duration(s)'] || v.duration || 0 };
+          vicSheet.forEach(v => {
+            const ts = v['日時'] || v['Timestamp'] || v.timestamp;
+            if (!ts) return;
+            const tsStr = new Date(ts).toISOString();
+            if (seen.has(tsStr)) return;
+            seen.add(tsStr);
+            const entry = {
+              date: tsStr,
+              craving: v['対象'] || v['Craving'] || v.craving || '',
+              duration: parseInt(v['耐えた秒数'] || v['Duration(s)'] || v.duration) || 0
+            };
             if (!existingSet.has(entry.date)) newVics.push(entry);
           });
           if (newVics.length > 0) {
@@ -1995,8 +2003,9 @@
           }
         }
 
-        // --- Weights (from Checkin data) ---
-        if (data.Checkin && data.Checkin.length > 0) {
+        // --- Checkin + Weight (旧: Checkin / 新: 朝チェックイン) ---
+        const ciSheet = data['朝チェックイン'] || data['Checkin'] || [];
+        if (ciSheet.length > 0) {
           const existingW = getWeights();
           const existingWDates = new Set(existingW.map(w => getDateStr(w.date)));
           const existingC = getCheckins();
@@ -2005,34 +2014,45 @@
           const newCheckins = [];
           const seenDates = new Set();
 
-          data.Checkin.forEach(c => {
-            const ts = c.Timestamp || c.timestamp;
-            const dateRaw = c.Date || c.date || ts;
+          ciSheet.forEach(c => {
+            const ts = c['記録日時'] || c['Timestamp'] || c.timestamp;
+            const dateRaw = c['日付'] || c['Date'] || c.date || ts;
             if (!dateRaw) return;
             const dateStr = getDateStr(new Date(dateRaw));
             if (seenDates.has(dateStr)) return;
             seenDates.add(dateStr);
 
             // Weight
-            const kg = parseFloat(c.Weight || c.weight);
+            const kg = parseFloat(c['体重(kg)'] || c['Weight'] || c.weight);
             if (kg && kg > 30 && kg < 300 && !existingWDates.has(dateStr)) {
               newWeights.push({ date: new Date(ts || dateRaw).toISOString(), kg });
             }
 
             // Checkin record
             if (!existingCDates.has(dateStr)) {
+              const sleepH = parseFloat(c['睡眠時間'] || c['SleepHours'] || c.sleepHours);
+              const sleepQ = c['睡眠の質'] || c['SleepQuality'] || c.sleepQuality || null;
+              const cpapRaw = c['CPAP'];
+              const cpap = cpapRaw != null && cpapRaw !== '' ? parseInt(cpapRaw) : null;
+              const fatigue = c['疲労度VAS'] != null && c['疲労度VAS'] !== '' ? parseInt(c['疲労度VAS']) : 50;
+              const pain = c['痛みVAS'] != null && c['痛みVAS'] !== '' ? parseInt(c['痛みVAS']) : 50;
+              const tagsRaw = c['タグ（カンマ区切り）'] || '';
+              const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t) : [];
+              const dinnerType = c['夕食タイプ'] || c['DietBase'] || c.dinnerType || null;
+              const dinnerTime = c['夕食時間'] || c.dinnerTime || null;
+
               const entry = {
                 date: dateStr,
-                timestamp: ts || new Date(dateRaw).toISOString(),
+                timestamp: ts ? new Date(ts).toISOString() : new Date(dateRaw).toISOString(),
                 weight: kg || null,
-                sleepHours: parseFloat(c.SleepHours || c.sleepHours) || null,
-                sleepQuality: c.SleepQuality || c.sleepQuality || null,
-                cpap: null,
-                vas_fatigue: 50,
-                vas_pain: 50,
-                tags: [],
-                dinnerType: c.DietBase || c.dinnerType || null,
-                dinnerTime: null
+                sleepHours: sleepH || null,
+                sleepQuality: sleepQ,
+                cpap: cpap,
+                vas_fatigue: fatigue,
+                vas_pain: pain,
+                tags: tags,
+                dinnerType: dinnerType,
+                dinnerTime: dinnerTime
               };
               newCheckins.push(entry);
             }
@@ -2050,13 +2070,38 @@
           }
         }
 
-        // --- Badges ---
-        if (data.Badges && data.Badges.length > 0) {
+        // --- Checkout (新: 夜チェックアウト) ---
+        const coSheet = data['夜チェックアウト'] || [];
+        if (coSheet.length > 0) {
+          const existingCo = getCheckouts();
+          const existingCoDates = new Set(existingCo.map(c => c.date));
+          const newCheckouts = [];
+          coSheet.forEach(c => {
+            const dateStr = c['日付'] || '';
+            if (!dateStr || existingCoDates.has(dateStr)) return;
+            newCheckouts.push({
+              date: dateStr,
+              timestamp: c['記録日時'] || '',
+              vas_performance: parseInt(c['パフォーマンスVAS']) || 50,
+              reflection: c['振り返りメモ'] || null,
+              logoutRituals: (c['リチュアル（カンマ区切り）'] || '').split(',').filter(t => t.trim())
+            });
+          });
+          if (newCheckouts.length > 0) {
+            const merged = [...existingCo, ...newCheckouts].sort((a, b) => a.date.localeCompare(b.date));
+            saveCheckouts(merged);
+            stats.checkouts = newCheckouts.length;
+          }
+        }
+
+        // --- Badges (旧: Badges / 新: バッジ) ---
+        const badgeSheet = data['バッジ'] || data['Badges'] || [];
+        if (badgeSheet.length > 0) {
           const existing = getEarnedBadges();
           const existingSet = new Set(existing);
           const newBadgeIds = [];
-          data.Badges.forEach(b => {
-            const id = b.BadgeID || b.badgeId;
+          badgeSheet.forEach(b => {
+            const id = b['バッジID'] || b['BadgeID'] || b.badgeId;
             if (id && !existingSet.has(id)) { newBadgeIds.push(id); existingSet.add(id); }
           });
           if (newBadgeIds.length > 0) {
@@ -2065,10 +2110,10 @@
           }
         }
 
-        const total = stats.victories + stats.weights + stats.checkins + stats.badges;
+        const total = stats.victories + stats.weights + stats.checkins + stats.checkouts + stats.badges;
         if (resultEl) {
           if (total > 0) {
-            resultEl.innerHTML = `✅ 復元完了！<br>勝利記録: ${stats.victories}件, 体重: ${stats.weights}件, チェックイン: ${stats.checkins}件, バッジ: ${stats.badges}件`;
+            resultEl.innerHTML = `✅ 復元完了！<br>勝利: ${stats.victories}件 / 体重: ${stats.weights}件 / 朝: ${stats.checkins}件 / 夜: ${stats.checkouts}件 / バッジ: ${stats.badges}件`;
             resultEl.style.color = 'var(--accent-green)';
             setTimeout(() => { updateAnalyticsScreen(); updateHomeStats(); }, 500);
           } else {
