@@ -389,54 +389,7 @@
     </div>
   </div>
 
-  <!-- ===== WEIGHT SCREEN ===== -->
-  <div id="screen-weight" class="screen">
-    <div class="home-header">
-      <div class="app-title" style="font-size:1.5rem">⚖️ 体重記録</div>
-    </div>
-
-    <div class="weight-input-section">
-      <div class="weight-input-card">
-        <div class="weight-input-label">今日の体重を記録</div>
-        <div class="weight-input-row">
-          <button class="weight-adjust-btn" id="btn-weight-minus">−</button>
-          <div class="weight-display-wrap">
-            <input type="number" step="0.1" class="weight-input" id="weight-input" value="80.0">
-            <span class="weight-unit">kg</span>
-          </div>
-          <button class="weight-adjust-btn" id="btn-weight-plus">＋</button>
-        </div>
-        <button class="weight-save-btn" id="btn-save-weight">記録する</button>
-      </div>
-    </div>
-
-    <div class="weight-summary" id="weight-summary" style="display:none">
-      <div class="weight-stat-card">
-        <span class="weight-stat-num" id="w-current">--</span>
-        <span class="weight-stat-lbl">最新</span>
-      </div>
-      <div class="weight-stat-card highlight-diff" id="w-diff-card">
-        <span class="weight-stat-num" id="w-diff">--</span>
-        <span class="weight-stat-lbl">増減</span>
-      </div>
-      <div class="weight-stat-card">
-        <span class="weight-stat-num" id="w-records">0</span>
-        <span class="weight-stat-lbl">記録数</span>
-      </div>
-    </div>
-
-    <div class="weight-chart-section">
-      <div class="weight-chart-container">
-        <canvas id="weight-chart"></canvas>
-        <div class="weight-chart-empty" id="weight-chart-empty" style="display:flex">2日以上記録すると<br>グラフが表示されます</div>
-      </div>
-    </div>
-
-    <div class="recent-wins-section" style="margin-top:20px;">
-      <div class="section-title">📋 体重記録履歴</div>
-      <div id="weight-history-list"></div>
-    </div>
-  </div>
+  <!-- 体重画面は削除済み。体重入力は朝チェックイン、グラフは分析画面に統合 -->
 
   <!-- ===== ANALYTICS / HISTORY SCREEN ===== -->
   <div id="screen-analytics" class="screen">

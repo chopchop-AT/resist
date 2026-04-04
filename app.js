@@ -366,8 +366,6 @@
     sos:     document.getElementById('screen-sos'),
     checkin: document.getElementById('screen-checkin'),
     checkout: document.getElementById('screen-checkout'),
-    weight:  document.getElementById('screen-weight'),
-    rest:    document.getElementById('screen-rest'),
     analytics: document.getElementById('screen-analytics')
   };
 
@@ -396,7 +394,6 @@
     homeBadgeName:      document.getElementById('home-badge-name'),
     histTotal:          document.getElementById('hist-total'),
     histStreak:         document.getElementById('hist-streak'),
-    histWeek:           document.getElementById('hist-week'),
     heatmapContainer:   document.getElementById('heatmap-container'),
     recentWinsList:     document.getElementById('recent-wins-list'),
     badgesGrid:         document.getElementById('badges-grid'),
@@ -405,18 +402,6 @@
     newBadgeName:       document.getElementById('new-badge-name'),
     newBadgeDesc:       document.getElementById('new-badge-desc'),
     btnBadgeClose:      document.getElementById('btn-badge-close'),
-    weightInput:        document.getElementById('weight-input'),
-    btnSaveWeight:      document.getElementById('btn-save-weight'),
-    btnWeightMinus:     document.getElementById('btn-weight-minus'),
-    btnWeightPlus:      document.getElementById('btn-weight-plus'),
-    weightSummary:      document.getElementById('weight-summary'),
-    wCurrent:           document.getElementById('w-current'),
-    wDiff:              document.getElementById('w-diff'),
-    wDiffCard:          document.getElementById('w-diff-card'),
-    wRecords:           document.getElementById('w-records'),
-    weightHistoryList:  document.getElementById('weight-history-list'),
-    weightChartCanvas:  document.getElementById('weight-chart'),
-    weightChartEmpty:   document.getElementById('weight-chart-empty')
   };
 
   // ---- Victory Data ----
@@ -451,15 +436,11 @@
 
   function getTotalWins() { return getVictories().length; }
 
-  function getWeekWins() {
-    const weekAgo = new Date(Date.now() - 7 * 86400000);
-    return getVictories().filter(v => new Date(v.date) >= weekAgo).length;
-  }
 
-  function getStreak() {
-    const v = getVictories();
-    if (v.length === 0) return 0;
-    const days = [...new Set(v.map(x => getDateStr(x.date)))].sort().reverse();
+  // 汎用ストリーク計算（日付文字列の配列から連続日数を算出）
+  function calcStreak(dateStrings) {
+    if (dateStrings.length === 0) return 0;
+    const days = [...new Set(dateStrings)].sort().reverse();
     const today = getTodayStr();
     const yesterday = getDateStr(new Date(Date.now() - 86400000));
     if (days[0] !== today && days[0] !== yesterday) return 0;
@@ -469,6 +450,10 @@
       if (diff === 1) streak++; else break;
     }
     return streak;
+  }
+
+  function getStreak() {
+    return calcStreak(getVictories().map(v => getDateStr(v.date)));
   }
 
   function getWinsPerDay(days) {
@@ -562,10 +547,8 @@
       b.classList.toggle('active', b.dataset.screen === name);
     });
     if (name === 'home') updateHomeStats();
-    if (name === 'weight') updateWeightScreen();
     if (name === 'checkin') initCheckinScreen();
     if (name === 'checkout') initCheckoutScreen();
-    // rest screen removed — integrated into checkout
     if (name === 'analytics') updateAnalyticsScreen();
   }
 
@@ -747,174 +730,7 @@
     }
   }
 
-  // ---- Weight Screen ----
-  let chartCtx = null;
-  let chartAnimFrame = null;
-
-  function updateWeightScreen() {
-    const weights = getWeights();
-    const today = getTodayStr();
-    const todayEntry = weights.find(w => getDateStr(w.date) === today);
-    if (todayEntry) els.weightInput.value = todayEntry.kg;
-
-    if (weights.length > 0) {
-      const latest = weights[weights.length - 1];
-      els.wCurrent.textContent = latest.kg.toFixed(1) + 'kg';
-      els.wRecords.textContent = weights.length;
-      els.weightSummary.style.display = 'flex';
-
-      if (weights.length >= 2) {
-        const diff = latest.kg - weights[0].kg;
-        const sign = diff < 0 ? '' : '+';
-        els.wDiff.textContent = sign + diff.toFixed(1) + 'kg';
-        els.wDiffCard.className = 'weight-stat-card highlight-diff ' + (diff < 0 ? 'loss' : diff > 0 ? 'gain' : '');
-      } else {
-        els.wDiff.textContent = '--';
-      }
-    }
-
-    renderWeightChart(weights);
-    renderWeightHistory(weights);
-    renderRecentWins();
-  }
-
-  function renderWeightChart(weights) {
-    const canvas = els.weightChartCanvas;
-    if (!canvas) return;
-
-    if (weights.length < 2) {
-      canvas.style.display = 'none';
-      els.weightChartEmpty.style.display = 'flex';
-      return;
-    }
-
-    canvas.style.display = 'block';
-    els.weightChartEmpty.style.display = 'none';
-
-    const dpr = window.devicePixelRatio || 1;
-    const container = canvas.parentElement;
-    const W = container.clientWidth - 32;
-    const H = container.clientHeight - 32;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, W, H);
-
-    const kgs = weights.map(w => w.kg);
-    const minKg = Math.min(...kgs) - 0.5;
-    const maxKg = Math.max(...kgs) + 0.5;
-    const pad = { top: 16, right: 12, bottom: 28, left: 36 };
-    const cW = W - pad.left - pad.right;
-    const cH = H - pad.top - pad.bottom;
-
-    function xPos(i) { return pad.left + (i / (weights.length - 1)) * cW; }
-    function yPos(kg) { return pad.top + (1 - (kg - minKg) / (maxKg - minKg)) * cH; }
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.top + (i / 4) * cH;
-      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
-      const kg = maxKg - (i / 4) * (maxKg - minKg);
-      ctx.fillStyle = 'rgba(136,146,168,0.7)';
-      ctx.font = '9px Inter, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(kg.toFixed(1), pad.left - 4, y + 3);
-    }
-
-    // Gradient fill
-    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
-    grad.addColorStop(0, 'rgba(96,165,250,0.3)');
-    grad.addColorStop(1, 'rgba(96,165,250,0)');
-
-    ctx.beginPath();
-    ctx.moveTo(xPos(0), yPos(kgs[0]));
-    for (let i = 1; i < weights.length; i++) {
-      const x0 = xPos(i-1), y0 = yPos(kgs[i-1]);
-      const x1 = xPos(i),   y1 = yPos(kgs[i]);
-      const cx = (x0 + x1) / 2;
-      ctx.bezierCurveTo(cx, y0, cx, y1, x1, y1);
-    }
-    ctx.lineTo(xPos(weights.length - 1), pad.top + cH);
-    ctx.lineTo(xPos(0), pad.top + cH);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Line
-    ctx.beginPath();
-    ctx.moveTo(xPos(0), yPos(kgs[0]));
-    for (let i = 1; i < weights.length; i++) {
-      const x0 = xPos(i-1), y0 = yPos(kgs[i-1]);
-      const x1 = xPos(i),   y1 = yPos(kgs[i]);
-      const cx = (x0 + x1) / 2;
-      ctx.bezierCurveTo(cx, y0, cx, y1, x1, y1);
-    }
-    ctx.strokeStyle = '#60a5fa';
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-
-    // Dots
-    weights.forEach((w, i) => {
-      const x = xPos(i), y = yPos(w.kg);
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#60a5fa';
-      ctx.fill();
-      ctx.strokeStyle = '#0a0e1a';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    });
-
-    // X labels (show first, last, and every ~5th)
-    ctx.fillStyle = 'rgba(136,146,168,0.7)';
-    ctx.font = '9px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    weights.forEach((w, i) => {
-      if (i === 0 || i === weights.length - 1 || (weights.length <= 10) || i % Math.ceil(weights.length / 5) === 0) {
-        const d = new Date(w.date);
-        const label = `${d.getMonth()+1}/${d.getDate()}`;
-        ctx.fillText(label, xPos(i), H - pad.bottom + 14);
-      }
-    });
-  }
-
-  function renderWeightHistory(weights) {
-    const list = els.weightHistoryList;
-    if (weights.length === 0) {
-      list.innerHTML = '<p class="empty-message">まだ記録がありません。<br>毎日記録して変化を確認しよう！</p>';
-      return;
-    }
-    list.innerHTML = '';
-    [...weights].reverse().forEach((w, i, arr) => {
-      const d = new Date(w.date);
-      const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
-      const prev = arr[i + 1];
-      let diffHtml = '<span class="wh-diff same">--</span>';
-      if (prev) {
-        const diff = w.kg - prev.kg;
-        const cls = diff < 0 ? 'loss' : diff > 0 ? 'gain' : 'same';
-        const sign = diff < 0 ? '' : '+';
-        diffHtml = `<span class="wh-diff ${cls}">${sign}${diff.toFixed(1)}kg</span>`;
-      }
-      const item = document.createElement('div');
-      item.className = 'weight-history-item';
-      item.innerHTML = `
-        <span class="wh-date">⚖️ ${dateStr}</span>
-        <span class="wh-weight">${w.kg.toFixed(1)} kg</span>
-        ${diffHtml}
-      `;
-      list.appendChild(item);
-    });
-  }
-
-
+  // 体重画面の関数群は削除済み（朝チェックイン＋分析画面に統合）
 
   function renderBadges() {
     const earned = getEarnedBadges();
@@ -1042,37 +858,6 @@
     showScreen('home');
   });
 
-  // Weight input
-  els.btnSaveWeight.addEventListener('click', () => {
-    const val = parseFloat(els.weightInput.value);
-    if (isNaN(val) || val < 30 || val > 300) {
-      els.weightInput.style.borderBottomColor = '#ff3b5c';
-      setTimeout(() => els.weightInput.style.borderBottomColor = '', 1000);
-      return;
-    }
-    saveWeight(val);
-    const newBadges = checkAndAwardBadges();
-    updateWeightScreen();
-
-    // Flash feedback
-    els.btnSaveWeight.textContent = '✓ 記録しました！';
-    els.btnSaveWeight.style.background = 'linear-gradient(135deg, #34d399, #10b981)';
-    setTimeout(() => {
-      els.btnSaveWeight.textContent = '記録する';
-      els.btnSaveWeight.style.background = '';
-      if (newBadges.length > 0) showBadgeModal(newBadges[0]);
-    }, 1200);
-  });
-
-  els.btnWeightMinus.addEventListener('click', () => {
-    const cur = parseFloat(els.weightInput.value) || 80;
-    els.weightInput.value = Math.max(30, cur - 0.1).toFixed(1);
-  });
-
-  els.btnWeightPlus.addEventListener('click', () => {
-    const cur = parseFloat(els.weightInput.value) || 80;
-    els.weightInput.value = Math.min(300, cur + 0.1).toFixed(1);
-  });
 
   // ---- CHECKIN SYSTEM (v4) ----
   const CHECKIN_KEY = 'revive_checkins';
@@ -1126,18 +911,7 @@
   }
 
   function getCheckinStreak() {
-    const checkins = getCheckins();
-    if (checkins.length === 0) return 0;
-    const dates = checkins.map(c => c.date).sort().reverse();
-    const today = getTodayStr();
-    const yesterday = getDateStr(new Date(Date.now() - 86400000));
-    if (dates[0] !== today && dates[0] !== yesterday) return 0;
-    let streak = 1;
-    for (let i = 0; i < dates.length - 1; i++) {
-      const diff = (new Date(dates[i]) - new Date(dates[i + 1])) / 86400000;
-      if (diff === 1) streak++; else break;
-    }
-    return streak;
+    return calcStreak(getCheckins().map(c => c.date));
   }
 
   // Smart weight input: 855 → 85.5, 1023 → 102.3
@@ -1294,19 +1068,6 @@
     return getRestRecords().find(r => r.date === getTodayStr()) || null;
   }
 
-  function initRestScreen() {
-    const today = getTodayRest();
-    const doneMsg = document.getElementById('rest-done-message');
-    const form = document.getElementById('rest-form');
-    if (today) {
-      if (doneMsg) doneMsg.style.display = 'block';
-      if (form) form.style.display = 'none';
-    } else {
-      if (doneMsg) doneMsg.style.display = 'none';
-      if (form) form.style.display = 'block';
-      shuffleRestPlans();
-    }
-  }
 
   function shuffleRestPlans() {
     const grid = document.getElementById('rest-plan-grid');
