@@ -866,7 +866,7 @@
   // Checkin state
   const checkinState = {
     weight: null, cpap: null, sleepHours: null, sleepQuality: null,
-    vas_fatigue: 50, vas_pain: 50, tags: [],
+    vas_fatigue: 50, vas_pain: 50, headache: null, tags: [],
     dinnerType: null, dinnerTime: null
   };
 
@@ -989,7 +989,8 @@
   function resetCheckinForm() {
     checkinState.weight = null; checkinState.cpap = null; checkinState.sleepHours = null;
     checkinState.sleepQuality = null; checkinState.dinnerType = null; checkinState.dinnerTime = null;
-    checkinState.vas_fatigue = 50; checkinState.vas_pain = 50; checkinState.tags = [];
+    checkinState.vas_fatigue = 50; checkinState.vas_pain = 50; checkinState.headache = null;
+    checkinState.tags = [];
     
     const weightInput = document.getElementById('checkin-weight-raw');
     const weightDisplay = document.getElementById('checkin-weight-display');
@@ -1320,8 +1321,10 @@
     const sleepQualityScore = sleepQualityMap[checkin.sleepQuality] ?? 3;
     const cpapMap = { 2: 6, 1: 3, 0: 0 };
     const cpapScore = cpapMap[checkin.cpap] ?? 0;
-    const painScore = Math.round(15 * (1 - (checkin.vas_pain ?? 50) / 100));
-    const sleepTotal = sleepHoursScore + sleepQualityScore + cpapScore + painScore;
+    const painScore = Math.round(13 * (1 - (checkin.vas_pain ?? 50) / 100));
+    const headacheMap = { 0: 2, 1: 1, 2: 0 };
+    const headacheScore = headacheMap[checkin.headache] ?? 1;
+    const sleepTotal = sleepHoursScore + sleepQualityScore + cpapScore + painScore + headacheScore;
 
     // --- Cat 2: 生活習慣 (25点) ---
     const dinnerTypeMap = { 'yuka': 8, 'eating_out': 4, 'eating_out_alcohol': 1 };
@@ -1805,6 +1808,9 @@
               const dinnerType = c['夕食タイプ'] || c['DietBase'] || c.dinnerType || null;
               const dinnerTime = c['夕食時間'] || c.dinnerTime || null;
 
+              const headacheRaw = c['頭痛'];
+              const headache = headacheRaw != null && headacheRaw !== '' ? parseInt(headacheRaw) : null;
+
               const entry = {
                 date: dateStr,
                 timestamp: ts ? new Date(ts).toISOString() : new Date(dateRaw).toISOString(),
@@ -1814,6 +1820,7 @@
                 cpap: cpap,
                 vas_fatigue: fatigue,
                 vas_pain: pain,
+                headache: headache,
                 tags: tags,
                 dinnerType: dinnerType,
                 dinnerTime: dinnerTime

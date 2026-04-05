@@ -32,7 +32,7 @@ function doPost(e) {
       var sheet = getOrCreateSheet(ss, '朝チェックイン', [
         '日付', '記録日時', '体重(kg)',
         'CPAP', '睡眠時間', '睡眠の質',
-        '疲労度VAS', '痛みVAS',
+        '疲労度VAS', '痛みVAS', '頭痛',
         '夕食タイプ', '夕食時間',
         'タグ（カンマ区切り）'
       ]);
@@ -45,6 +45,7 @@ function doPost(e) {
         payload.sleepQuality || '',
         payload.vas_fatigue != null ? payload.vas_fatigue : '',
         payload.vas_pain != null ? payload.vas_pain : '',
+        payload.headache != null ? payload.headache : '',
         payload.dinnerType || '',
         payload.dinnerTime || '',
         (payload.tags || []).join(',')
