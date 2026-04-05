@@ -1,4 +1,4 @@
-const CACHE_NAME = 'revive-v6';
+const CACHE_NAME = 'revive-v8';
 const ASSETS = [
   './',
   './index.html',

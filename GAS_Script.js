@@ -34,7 +34,9 @@ function doPost(e) {
         'CPAP', '睡眠時間', '睡眠の質',
         '疲労度VAS', '痛みVAS', '頭痛',
         '夕食タイプ', '夕食時間',
-        'タグ（カンマ区切り）'
+        'タグ（カンマ区切り）',
+        'カフェイン杯数', '最終カフェイン時間',
+        'サプリ朝', 'サプリ昼', 'サプリ夜'
       ]);
       sheet.appendRow([
         payload.date || '',
@@ -48,7 +50,12 @@ function doPost(e) {
         payload.headache != null ? payload.headache : '',
         payload.dinnerType || '',
         payload.dinnerTime || '',
-        (payload.tags || []).join(',')
+        (payload.tags || []).join(','),
+        payload.caffeine != null ? payload.caffeine : '',
+        payload.caffeineLastTime || '',
+        payload.supplement_morning ? 1 : 0,
+        payload.supplement_noon ? 1 : 0,
+        payload.supplement_evening ? 1 : 0
       ]);
     }
 
@@ -56,14 +63,18 @@ function doPost(e) {
       var sheet = getOrCreateSheet(ss, '夜チェックアウト', [
         '日付', '記録日時',
         'パフォーマンスVAS', '振り返りメモ',
-        'リチュアル（カンマ区切り）'
+        'リチュアル（カンマ区切り）',
+        'デジタルウォール', '就寝時刻', 'ストレッチ完了数'
       ]);
       sheet.appendRow([
         payload.date || '',
         payload.timestamp || new Date().toISOString(),
         payload.vas_performance != null ? payload.vas_performance : '',
         payload.reflection || '',
-        (payload.logoutRituals || []).join(',')
+        (payload.logoutRituals || []).join(','),
+        payload.digitalWall != null ? payload.digitalWall : '',
+        payload.bedtime || '',
+        payload.stretchCount != null ? payload.stretchCount : 0
       ]);
     }
 

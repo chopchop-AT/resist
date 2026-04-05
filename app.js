@@ -567,8 +567,10 @@
       scoreEl.className = 'home-score-total ' + (score.total >= 70 ? 'score-high' : score.total >= 40 ? 'score-mid' : 'score-low');
       document.getElementById('home-cat-sleep').textContent = score.sleep.score + '/' + score.sleep.max;
       document.getElementById('home-cat-lifestyle').textContent = score.lifestyle.score + '/' + score.lifestyle.max;
-      document.getElementById('home-cat-perf').textContent = score.performance.score + '/' + score.performance.max;
+      const energyEl = document.getElementById('home-cat-energy');
+      if (energyEl && score.energy) energyEl.textContent = score.energy.score + '/' + score.energy.max;
       document.getElementById('home-cat-recovery').textContent = score.recovery.score + '/' + score.recovery.max;
+      document.getElementById('home-cat-perf').textContent = score.performance.score + '/' + score.performance.max;
     }
 
     // Progress indicators
@@ -590,6 +592,24 @@
       }
     }
 
+    // Caffeine deadline alert (show between 10:00-13:40)
+    const caffeineAlert = document.getElementById('caffeine-alert');
+    if (caffeineAlert) {
+      const now = new Date();
+      const h = now.getHours(), m = now.getMinutes();
+      const minuteOfDay = h * 60 + m;
+      caffeineAlert.style.display = (minuteOfDay >= 600 && minuteOfDay <= 820) ? 'block' : 'none';
+    }
+
+    // Energy Battery
+    updateBattery();
+
+    // 7 Key Interventions Checklist
+    updateInterventions();
+
+    // Evening Timeline
+    updateTimeline();
+
     // Update special day ticket UI
     const tickets = getAvailableTickets();
     const cycleProg = getWinsInCurrentCycle();
@@ -598,6 +618,207 @@
     document.getElementById('special-progress-bar').style.width = (cycleProg / WINS_PER_TICKET * 100) + '%';
     const useBtn = document.getElementById('btn-use-ticket');
     useBtn.style.display = tickets > 0 ? 'block' : 'none';
+  }
+
+  // ---- Energy Battery ----
+  function updateBattery() {
+    const pctEl = document.getElementById('battery-pct');
+    const labelEl = document.getElementById('battery-label');
+    const fillEl = document.getElementById('battery-bar-fill');
+    const debtEl = document.getElementById('battery-debt');
+    if (!pctEl) return;
+
+    const checkin = getTodayCheckin();
+    if (!checkin) {
+      pctEl.textContent = '--';
+      pctEl.className = 'battery-pct';
+      labelEl.textContent = '朝チェックインでエネルギーを算出';
+      fillEl.style.width = '0%';
+      fillEl.className = 'battery-bar-fill';
+      if (debtEl) debtEl.style.display = 'none';
+      return;
+    }
+
+    // Base charge from sleep + CPAP + pain
+    const sleepH = parseFloat(checkin.sleepHours) || 6;
+    const sleepCharge = Math.min(30, Math.max(0, (sleepH - 4) * 10)); // 4h=0, 7h=30
+    const cpapCharge = checkin.cpap === 2 ? 20 : checkin.cpap === 1 ? 10 : 0;
+    const qualityMap = { 'great': 15, 'ok': 10, 'light': 5, 'terrible': 0 };
+    const qualityCharge = qualityMap[checkin.sleepQuality] ?? 8;
+    const painDrain = Math.round((checkin.vas_pain ?? 50) * 0.15); // 0-15 drain
+    const fatigueDrain = Math.round((checkin.vas_fatigue ?? 50) * 0.1); // 0-10 drain
+
+    let morningCharge = Math.min(100, sleepCharge + cpapCharge + qualityCharge - painDrain - fatigueDrain);
+    morningCharge = Math.max(5, morningCharge); // Floor at 5%
+
+    // Time-based depletion
+    const now = new Date();
+    const h = now.getHours();
+    let depletion = 0;
+    if (h >= 6 && h < 12) depletion = (h - 6) * 5;
+    else if (h >= 12 && h < 17) depletion = 30 + (h - 12) * 7;
+    else if (h >= 17) depletion = 65 + (h - 17) * 3;
+
+    // Recovery events boost
+    let boost = 0;
+    const checkout = getTodayCheckout();
+    if (checkin.dinnerType === 'yuka') boost += 8;
+    if (checkout && checkout.digitalWall === 2) boost += 5;
+    if (checkout && checkout.stretchCount >= 5) boost += 5;
+    if (checkin.supplement_morning && checkin.supplement_noon && checkin.supplement_evening) boost += 3;
+
+    const battery = Math.max(0, Math.min(100, morningCharge - depletion + boost));
+    const level = battery >= 70 ? 'high' : battery >= 40 ? 'mid' : 'low';
+
+    pctEl.textContent = battery;
+    pctEl.className = 'battery-pct ' + level;
+    fillEl.style.width = battery + '%';
+    fillEl.className = 'battery-bar-fill ' + level;
+
+    if (battery >= 70) labelEl.textContent = 'エネルギー充分 — 今日も全力で';
+    else if (battery >= 40) labelEl.textContent = '省エネモード推奨 — 優先順位を絞ろう';
+    else labelEl.textContent = 'エネルギー警告 — 回復アクションを最優先に';
+
+    // Sleep debt (last 7 days)
+    if (debtEl) {
+      const checkins = getCheckins().slice(-7);
+      if (checkins.length >= 3) {
+        let debt = 0;
+        checkins.forEach(c => { debt += 7 - (parseFloat(c.sleepHours) || 6); });
+        if (debt > 0) {
+          debtEl.style.display = 'block';
+          debtEl.textContent = `💤 睡眠負債: -${debt.toFixed(1)}時間（直近${checkins.length}日）`;
+        } else {
+          debtEl.style.display = 'none';
+        }
+      } else {
+        debtEl.style.display = 'none';
+      }
+    }
+  }
+
+  // ---- 7 Key Interventions Checklist ----
+  function updateInterventions() {
+    const today = getTodayStr();
+    const checkin = getTodayCheckin();
+    const checkout = getTodayCheckout();
+    const rest = getTodayRest();
+    let doneCount = 0;
+
+    function setIV(id, status, text) {
+      const el = document.getElementById(id);
+      const statusEl = document.getElementById(id + '-status');
+      if (!el || !statusEl) return;
+      el.className = 'intervention-item ' + status;
+      statusEl.textContent = text;
+      if (status === 'done') doneCount++;
+    }
+
+    // 1. Sleep 7h
+    if (checkin && checkin.sleepHours) {
+      const h = parseFloat(checkin.sleepHours);
+      if (h >= 7) setIV('iv-sleep', 'done', `${h}h`);
+      else setIV('iv-sleep', 'fail', `${h}h`);
+    } else { setIV('iv-sleep', 'pending', '未記録'); }
+
+    // 2. CPAP
+    if (checkin && checkin.cpap != null) {
+      if (checkin.cpap === 2) setIV('iv-cpap', 'done', 'バッチリ');
+      else if (checkin.cpap === 1) setIV('iv-cpap', 'fail', '途中外し');
+      else setIV('iv-cpap', 'fail', '未装着');
+    } else { setIV('iv-cpap', 'pending', '未記録'); }
+
+    // 3. Yuka's meals
+    if (checkin && checkin.dinnerType) {
+      if (checkin.dinnerType === 'yuka') setIV('iv-yuka', 'done', 'ゆかごはん');
+      else setIV('iv-yuka', 'fail', '外食');
+    } else { setIV('iv-yuka', 'pending', '今夜'); }
+
+    // 4. Supplements (tracked via checkin)
+    if (checkin && checkin.supplement_morning != null) {
+      const m = checkin.supplement_morning;
+      const n = checkin.supplement_noon;
+      const e = checkin.supplement_evening;
+      if (m && n && e) setIV('iv-suppl', 'done', '完全遵守');
+      else {
+        const parts = [m ? '朝' : '', n ? '昼' : '', e ? '夜' : ''].filter(Boolean);
+        setIV('iv-suppl', 'fail', parts.join('+') + 'のみ');
+      }
+    } else { setIV('iv-suppl', 'pending', '未記録'); }
+
+    // 5. Digital Wall (tracked via checkout)
+    if (checkout && checkout.digitalWall != null) {
+      if (checkout.digitalWall === 2) setIV('iv-wall', 'done', '完璧');
+      else if (checkout.digitalWall === 1) setIV('iv-wall', 'fail', '一部破り');
+      else setIV('iv-wall', 'fail', '未遵守');
+    } else {
+      const h = new Date().getHours();
+      setIV('iv-wall', 'pending', h < 21 ? '21:30から' : '未記録');
+    }
+
+    // 6. Stretch (tracked via checkout)
+    if (checkout && checkout.stretchCount != null) {
+      if (checkout.stretchCount >= 5) setIV('iv-stretch', 'done', `${checkout.stretchCount}/7`);
+      else if (checkout.stretchCount > 0) setIV('iv-stretch', 'fail', `${checkout.stretchCount}/7`);
+      else setIV('iv-stretch', 'fail', '未実施');
+    } else { setIV('iv-stretch', 'pending', '入浴後'); }
+
+    // 7. Morning walk
+    if (checkin && (checkin.tags || []).includes('朝ウォーキング')) {
+      setIV('iv-walk', 'done', '完了');
+    } else if (checkin) {
+      setIV('iv-walk', 'fail', '未実施');
+    } else { setIV('iv-walk', 'pending', '--'); }
+
+    const countEl = document.getElementById('interventions-count');
+    if (countEl) {
+      countEl.textContent = `${doneCount}/7`;
+      countEl.style.color = doneCount >= 7 ? 'var(--accent-green)' : doneCount >= 4 ? 'var(--accent-gold)' : 'var(--accent-red)';
+    }
+  }
+
+  // ---- Evening Timeline ----
+  function updateTimeline() {
+    const card = document.getElementById('timeline-card');
+    const list = document.getElementById('timeline-list');
+    if (!card || !list) return;
+
+    const now = new Date();
+    const h = now.getHours(), m = now.getMinutes();
+    const minuteOfDay = h * 60 + m;
+
+    // Only show timeline after 17:00
+    if (minuteOfDay < 1020) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    const milestones = [
+      { time: 1170, label: '退勤・帰宅開始', icon: '🚶' },
+      { time: 1230, label: 'ゆかごはん', icon: '🍲' },
+      { time: 1290, label: 'デジタルウォール開始', icon: '📵' },
+      { time: 1320, label: 'ストレッチタイム', icon: '🧘' },
+      { time: 1350, label: '就寝目標', icon: '😴' }
+    ];
+
+    list.innerHTML = '';
+    milestones.forEach(ms => {
+      if (ms.time < minuteOfDay - 30) return; // Skip long-past items
+      const item = document.createElement('div');
+      const diff = ms.time - minuteOfDay;
+      const isPast = diff < 0;
+      const isActive = diff >= 0 && diff <= 30;
+      item.className = 'timeline-item' + (isPast ? ' past' : '') + (isActive ? ' active' : '');
+      const timeH = Math.floor(ms.time / 60), timeM = ms.time % 60;
+      const timeStr = `${timeH}:${String(timeM).padStart(2, '0')}`;
+      let countdown = '';
+      if (diff > 0) {
+        const dh = Math.floor(diff / 60), dm = diff % 60;
+        countdown = dh > 0 ? `あと${dh}h${dm}m` : `あと${dm}分`;
+      } else if (isActive) {
+        countdown = '今！';
+      }
+      item.innerHTML = `<span class="timeline-time">${timeStr}</span><span>${ms.icon} ${ms.label}</span><span class="timeline-countdown">${countdown}</span>`;
+      list.appendChild(item);
+    });
   }
 
   // ---- SOS Mode ----
@@ -800,6 +1021,12 @@
     btn.addEventListener('click', () => { if (btn.dataset.screen) showScreen(btn.dataset.screen); });
   });
 
+  // Home score card → analytics navigation
+  const homeScoreCard = document.getElementById('home-score-card');
+  if (homeScoreCard) {
+    homeScoreCard.addEventListener('click', () => showScreen('analytics'));
+  }
+
   els.sosBtn.addEventListener('click', startSOS);
   els.backSos.addEventListener('click', () => { stopSOS(); showScreen('home'); });
   els.btnVictory.addEventListener('click', onVictoryClick);
@@ -867,11 +1094,13 @@
   const checkinState = {
     weight: null, cpap: null, sleepHours: null, sleepQuality: null,
     vas_fatigue: 50, vas_pain: 50, headache: null, tags: [],
-    dinnerType: null, dinnerTime: null
+    dinnerType: null, dinnerTime: null, caffeine: null, caffeineLastTime: null,
+    supplement_morning: false, supplement_noon: false, supplement_evening: false
   };
 
   const checkoutState = {
-    vas_performance: 50, reflection: null, logoutRituals: []
+    vas_performance: 50, reflection: null, logoutRituals: [],
+    digitalWall: null, bedtime: null, stretchCount: 0
   };
 
   function getCheckouts() {
@@ -912,6 +1141,10 @@
 
   function getCheckinStreak() {
     return calcStreak(getCheckins().map(c => c.date));
+  }
+
+  function getCheckoutStreak() {
+    return calcStreak(getCheckouts().map(c => c.date));
   }
 
   // Smart weight input: 855 → 85.5, 1023 → 102.3
@@ -990,7 +1223,12 @@
     checkinState.weight = null; checkinState.cpap = null; checkinState.sleepHours = null;
     checkinState.sleepQuality = null; checkinState.dinnerType = null; checkinState.dinnerTime = null;
     checkinState.vas_fatigue = 50; checkinState.vas_pain = 50; checkinState.headache = null;
+    checkinState.caffeine = null; checkinState.caffeineLastTime = null;
+    checkinState.supplement_morning = false; checkinState.supplement_noon = false; checkinState.supplement_evening = false;
     checkinState.tags = [];
+    const caffeineTimeGroup = document.getElementById('caffeine-time-group');
+    if (caffeineTimeGroup) caffeineTimeGroup.style.display = 'none';
+    document.querySelectorAll('.suppl-check-btn').forEach(b => b.classList.remove('taken'));
     
     const weightInput = document.getElementById('checkin-weight-raw');
     const weightDisplay = document.getElementById('checkin-weight-display');
@@ -1112,10 +1350,12 @@
 
   function resetCheckoutForm() {
     checkoutState.vas_performance = 50; checkoutState.reflection = null; checkoutState.logoutRituals = [];
+    checkoutState.digitalWall = null; checkoutState.bedtime = null; checkoutState.stretchCount = 0;
     const vp = document.getElementById('vas-performance'); if(vp) vp.value = 50;
     const vpv = document.getElementById('vas-performance-val'); if(vpv) vpv.textContent = '50';
     const ref = document.getElementById('checkout-reflection'); if(ref) ref.value = '';
     document.querySelectorAll('.logout-ritual-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#screen-checkout .checkin-option-btn').forEach(b => b.classList.remove('selected'));
   }
 
   // Weight smart input handler
@@ -1149,8 +1389,26 @@
         btn.classList.add('selected');
         let val = btn.dataset.value;
         const numVal = parseFloat(val);
-        checkinState[field] = isNaN(numVal) ? val : numVal;
+        // Route to correct state object
+        if (field in checkinState) {
+          checkinState[field] = isNaN(numVal) ? val : numVal;
+        }
+        if (field in checkoutState) {
+          checkoutState[field] = isNaN(numVal) ? val : numVal;
+        }
         if (navigator.vibrate) navigator.vibrate(30);
+
+        // Caffeine: show/hide time selector based on cups
+        if (field === 'caffeine') {
+          const caffeineTimeGroup = document.getElementById('caffeine-time-group');
+          if (caffeineTimeGroup) {
+            caffeineTimeGroup.style.display = (numVal > 0) ? 'block' : 'none';
+            if (numVal === 0) {
+              checkinState.caffeineLastTime = null;
+              caffeineTimeGroup.querySelectorAll('.checkin-option-btn').forEach(b => b.classList.remove('selected'));
+            }
+          }
+        }
       });
     });
   });
@@ -1165,6 +1423,32 @@
       } else {
         checkinState.tags = checkinState.tags.filter(t => t !== tag);
       }
+      if (navigator.vibrate) navigator.vibrate(20);
+    });
+  });
+
+  // Supplement check buttons
+  document.querySelectorAll('.suppl-check-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('taken');
+      const suppl = btn.dataset.suppl;
+      const isTaken = btn.classList.contains('taken');
+      // Map each button to a supplement slot
+      if (suppl.startsWith('morning_')) checkinState.supplement_morning = document.querySelectorAll('.suppl-check-btn[data-suppl^="morning_"].taken').length === 2;
+      if (suppl.startsWith('noon_')) checkinState.supplement_noon = btn.classList.contains('taken');
+      if (suppl.startsWith('evening_')) checkinState.supplement_evening = document.querySelectorAll('.suppl-check-btn[data-suppl^="evening_"].taken').length === 3;
+      if (navigator.vibrate) navigator.vibrate(20);
+    });
+  });
+
+  // Stretch protocol buttons
+  document.querySelectorAll('.stretch-item-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('done');
+      const count = document.querySelectorAll('.stretch-item-btn.done').length;
+      checkoutState.stretchCount = count;
+      const progressEl = document.getElementById('stretch-progress');
+      if (progressEl) progressEl.textContent = `完了: ${count}/7` + (count >= 7 ? ' 🎉' : '');
       if (navigator.vibrate) navigator.vibrate(20);
     });
   });
@@ -1279,9 +1563,42 @@
       localStorage.setItem(REST_KEY, JSON.stringify(records));
       syncToGas('rest', restEntry);
 
-      if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+      // Show success effect
+      const ritualCount = checkoutState.logoutRituals.length;
+      const planCount = restState.selectedPlans.length;
+      const effectDetail = document.getElementById('checkout-effect-detail');
+      if (effectDetail) {
+        const parts = [];
+        if (ritualCount > 0) parts.push(`${ritualCount}つのリチュアル`);
+        if (planCount > 0) parts.push(`${planCount}つの休養プラン`);
+        effectDetail.textContent = parts.length > 0
+          ? `${parts.join(' + ')} — ゆっくり休みましょう`
+          : '今日もお疲れ様でした。ゆっくり休みましょう';
+      }
+      const checkoutStreak = getCheckoutStreak();
+      const effectStreak = document.getElementById('checkout-effect-streak');
+      if (effectStreak) {
+        effectStreak.textContent = checkoutStreak > 1
+          ? `🌙 ${checkoutStreak}日連続チェックアウト！`
+          : '✨ 今日の振り返り完了！';
+      }
+
+      const checkoutEffectEl = document.getElementById('checkout-effect');
+      if (checkoutEffectEl) checkoutEffectEl.classList.add('active');
+      spawnConfetti();
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+
       updateHomeStats();
+    });
+  }
+
+  // Checkout effect close
+  const btnCheckoutEffectClose = document.getElementById('btn-checkout-effect-close');
+  if (btnCheckoutEffectClose) {
+    btnCheckoutEffectClose.addEventListener('click', () => {
+      document.getElementById('checkout-effect').classList.remove('active');
       initCheckoutScreen();
+      showScreen('home');
     });
   }
 
@@ -1314,39 +1631,63 @@
 
     const tags = checkin.tags || [];
 
-    // --- Cat 1: 睡眠と身体 (35点) ---
-    const sleepHoursMap = { '8': 8, '7.5': 7, '7': 6, '6.5': 5, '6': 4, '5.5': 2, '5': 1, '4.5': 0 };
-    const sleepHoursScore = sleepHoursMap[String(checkin.sleepHours)] ?? 4;
-    const sleepQualityMap = { 'great': 6, 'ok': 4, 'light': 2, 'terrible': 0 };
-    const sleepQualityScore = sleepQualityMap[checkin.sleepQuality] ?? 3;
+    // --- Cat 1: 睡眠と身体 (30点) ---
+    const sleepHoursMap = { '8': 7, '7.5': 6, '7': 5, '6.5': 4, '6': 3, '5.5': 2, '5': 1, '4.5': 0 };
+    const sleepHoursScore = sleepHoursMap[String(checkin.sleepHours)] ?? 3;
+    const sleepQualityMap = { 'great': 5, 'ok': 3, 'light': 2, 'terrible': 0 };
+    const sleepQualityScore = sleepQualityMap[checkin.sleepQuality] ?? 2;
     const cpapMap = { 2: 6, 1: 3, 0: 0 };
     const cpapScore = cpapMap[checkin.cpap] ?? 0;
-    const painScore = Math.round(13 * (1 - (checkin.vas_pain ?? 50) / 100));
+    const painScore = Math.round(10 * (1 - (checkin.vas_pain ?? 50) / 100));
     const headacheMap = { 0: 2, 1: 1, 2: 0 };
     const headacheScore = headacheMap[checkin.headache] ?? 1;
     const sleepTotal = sleepHoursScore + sleepQualityScore + cpapScore + painScore + headacheScore;
 
-    // --- Cat 2: 生活習慣 (25点) ---
-    const dinnerTypeMap = { 'yuka': 8, 'eating_out': 4, 'eating_out_alcohol': 1 };
-    const dinnerTypeScore = dinnerTypeMap[checkin.dinnerType] ?? 4;
-    const dinnerTimeMap = { 'before19': 5, '19to21': 3, 'after21': 1 };
+    // --- Cat 2: 栄養と習慣 (20点) ---
+    const dinnerTypeMap = { 'yuka': 6, 'eating_out': 3, 'eating_out_alcohol': 1 };
+    const dinnerTypeScore = dinnerTypeMap[checkin.dinnerType] ?? 3;
+    const dinnerTimeMap = { 'before19': 3, '19to21': 2, 'after21': 1 };
     const dinnerTimeScore = dinnerTimeMap[checkin.dinnerTime] ?? 2;
     const healthTags = ['朝ウォーキング', '夜ストレッチ', 'ジャーナリング', '間食なし', 'サプリメント'];
     let healthHabitScore = 0;
-    healthTags.forEach(ht => { if (tags.includes(ht)) healthHabitScore += 2.4; });
-    healthHabitScore = Math.round(healthHabitScore);
-    const lifestyleTotal = dinnerTypeScore + dinnerTimeScore + healthHabitScore;
+    healthTags.forEach(ht => { if (tags.includes(ht)) healthHabitScore += 1; });
+    // Caffeine (3点)
+    let caffeineScore = 1;
+    const caffeine = checkin.caffeine;
+    if (caffeine != null) {
+      if (caffeine === 0) caffeineScore = 3;
+      else if (caffeine === 1) {
+        const ct = checkin.caffeineLastTime;
+        caffeineScore = ct === 'before13' ? 2 : 1;
+      }
+      else caffeineScore = 0;
+    }
+    // Morning walk (3点)
+    const walkScore = tags.includes('朝ウォーキング') ? 3 : 0;
+    const lifestyleTotal = dinnerTypeScore + dinnerTimeScore + healthHabitScore + caffeineScore + walkScore;
 
-    // --- Cat 3: パフォーマンス & SOS (20点) ---
-    const perfVas = checkout ? (checkout.vas_performance ?? 50) : 50;
-    const perfScore = Math.round(10 * perfVas / 100);
-    const fatigueScore = Math.round(6 * (1 - (checkin.vas_fatigue ?? 50) / 100));
-    // SOS victories contribute (max 4pts)
-    const todayVictories = getVictories().filter(v => getDateStr(v.date) === dateStr).length;
-    const sosScore = Math.min(4, todayVictories * 2);
-    const performanceTotal = perfScore + fatigueScore + sosScore;
+    // --- Cat 3: エネルギー管理 (20点) ---
+    // Supplements (8点)
+    let supplScore = 0;
+    if (checkin.supplement_morning) supplScore += 2;
+    if (checkin.supplement_noon) supplScore += 2;
+    if (checkin.supplement_evening) supplScore += 4; // Evening most critical
+    // Digital Wall (4点)
+    const wallMap = { 2: 4, 1: 2, 0: 0 };
+    const wallScore = checkout ? (wallMap[checkout.digitalWall] ?? 0) : 0;
+    // Stretch (4点)
+    let stretchScore = 0;
+    if (checkout && checkout.stretchCount != null) {
+      if (checkout.stretchCount >= 5) stretchScore = 4;
+      else if (checkout.stretchCount >= 3) stretchScore = 3;
+      else if (checkout.stretchCount >= 1) stretchScore = 1;
+    }
+    // Bedtime (4点)
+    const bedtimeMap = { 'before22': 4, '22to2230': 4, '2230to23': 3, '23to0': 1, 'after0': 0 };
+    const bedtimeScore = checkout ? (bedtimeMap[checkout.bedtime] ?? 0) : 0;
+    const energyTotal = supplScore + wallScore + stretchScore + bedtimeScore;
 
-    // --- Cat 4: リカバリー行動 (20点) ---
+    // --- Cat 4: リカバリー行動 (15点) ---
     const drammaTagMap = {
       D: ['スマホ断ち', '何もしない', '通知オフ'],
       R: ['半身浴', '自然な睡眠', 'ストレッチ'],
@@ -1359,30 +1700,39 @@
     Object.values(drammaTagMap).forEach(catTags => {
       if (catTags.some(t => tags.includes(t))) drammaCatsFilled++;
     });
-    const morningDrammaScore = Math.round(drammaCatsFilled * (8 / 6));
+    const morningDrammaScore = Math.round(drammaCatsFilled * (5 / 6));
 
     const ritualCount = checkout ? (checkout.logoutRituals || []).length : 0;
     let ritualScore = 0;
-    if (ritualCount >= 5) ritualScore = 6;
-    else if (ritualCount >= 3) ritualScore = 4;
-    else if (ritualCount >= 1) ritualScore = 2;
+    if (ritualCount >= 5) ritualScore = 5;
+    else if (ritualCount >= 3) ritualScore = 3;
+    else if (ritualCount >= 1) ritualScore = 1;
 
     const planCount = rest ? (rest.plans || []).length : 0;
     let planScore = 0;
-    if (planCount >= 5) planScore = 6;
-    else if (planCount >= 3) planScore = 4;
-    else if (planCount >= 1) planScore = 2;
+    if (planCount >= 5) planScore = 5;
+    else if (planCount >= 3) planScore = 3;
+    else if (planCount >= 1) planScore = 1;
 
     const recoveryTotal = morningDrammaScore + ritualScore + planScore;
 
-    const total = sleepTotal + lifestyleTotal + performanceTotal + recoveryTotal;
+    // --- Cat 5: パフォーマンス (15点) ---
+    const perfVas = checkout ? (checkout.vas_performance ?? 50) : 50;
+    const perfScore = Math.round(7 * perfVas / 100);
+    const fatigueScore = Math.round(4 * (1 - (checkin.vas_fatigue ?? 50) / 100));
+    const todayVictories = getVictories().filter(v => getDateStr(v.date) === dateStr).length;
+    const sosScore = Math.min(4, todayVictories * 2);
+    const performanceTotal = perfScore + fatigueScore + sosScore;
+
+    const total = sleepTotal + lifestyleTotal + energyTotal + recoveryTotal + performanceTotal;
 
     return {
       total: Math.min(100, total),
-      sleep: { score: sleepTotal, max: 35 },
-      lifestyle: { score: lifestyleTotal, max: 25 },
-      performance: { score: performanceTotal, max: 20 },
-      recovery: { score: recoveryTotal, max: 20 }
+      sleep: { score: sleepTotal, max: 30 },
+      lifestyle: { score: lifestyleTotal, max: 20 },
+      energy: { score: energyTotal, max: 20 },
+      recovery: { score: recoveryTotal, max: 15 },
+      performance: { score: performanceTotal, max: 15 }
     };
   }
 
@@ -1410,10 +1760,11 @@
       const scoreClass = result.total >= 70 ? 'score-high' : result.total >= 40 ? 'score-mid' : 'score-low';
 
       const cats = [
-        { label: '睡眠回復', score: result.sleep.score, max: result.sleep.max, color: 'var(--accent-blue)' },
-        { label: '生活習慣', score: result.lifestyle.score, max: result.lifestyle.max, color: 'var(--accent-green)' },
-        { label: 'パフォーマンス', score: result.performance.score, max: result.performance.max, color: 'var(--accent-gold)' },
-        { label: 'リカバリー', score: result.recovery.score, max: result.recovery.max, color: '#a78bfa' }
+        { label: '睡眠と身体', score: result.sleep.score, max: result.sleep.max, color: 'var(--accent-blue)' },
+        { label: '栄養と習慣', score: result.lifestyle.score, max: result.lifestyle.max, color: 'var(--accent-green)' },
+        { label: 'エネルギー管理', score: result.energy ? result.energy.score : 0, max: result.energy ? result.energy.max : 20, color: '#f97316' },
+        { label: 'リカバリー', score: result.recovery.score, max: result.recovery.max, color: '#a78bfa' },
+        { label: 'パフォーマンス', score: result.performance.score, max: result.performance.max, color: 'var(--accent-gold)' }
       ];
 
       const barsHtml = cats.map(c => {
@@ -1446,6 +1797,7 @@
   let radarChartInstance = null;
 
   let weightChartInstance = null;
+  let weightPainChartInstance = null;
 
   function updateAnalyticsScreen() {
     document.getElementById('hist-total').textContent = getTotalWins();
@@ -1456,7 +1808,9 @@
     drawRadarChart();
     renderDramma();
     renderAnalyticsWeightChart();
+    renderWeightPainChart();
     generateBestResetFormula();
+    updatePhaseProgress();
   }
 
   let currentWeightRange = 7;
@@ -1711,12 +2065,174 @@
     }
   }
 
+  // ---- Phase Progress ----
+  function updatePhaseProgress() {
+    const bar = document.getElementById('phase2-bar');
+    const desc = document.getElementById('phase2-desc');
+    if (!bar) return;
+
+    const weights = getWeights();
+    const checkins = getCheckins();
+    // Phase 2 progress: based on weight trend (84→80 target) + days tracked
+    let progress = 0;
+    if (weights.length > 0) {
+      const latest = weights[weights.length - 1].kg;
+      // Weight component: 84→80 = 0→50%
+      const weightProgress = Math.min(50, Math.max(0, (84 - latest) / 4 * 50));
+      // Days tracked component: 90 days = 50%
+      const daysSinceStart = Math.floor((Date.now() - new Date('2026-02-01').getTime()) / 86400000);
+      const daysProgress = Math.min(50, (daysSinceStart / 180) * 50);
+      progress = Math.round(weightProgress + daysProgress);
+    }
+    bar.style.width = Math.min(100, progress) + '%';
+    if (desc && weights.length > 0) {
+      const latest = weights[weights.length - 1].kg;
+      desc.textContent = `現在 ${latest.toFixed(1)}kg → 目標 80kg | 記録${checkins.length}日目`;
+    }
+  }
+
+  // ---- Weight-Pain Correlation Chart ----
+  let currentWpRange = 7;
+
+  function renderWeightPainChart(rangeDays) {
+    if (rangeDays) currentWpRange = rangeDays;
+    const canvas = document.getElementById('weight-pain-chart');
+    const emptyMsg = document.getElementById('weight-pain-empty');
+    const insightEl = document.getElementById('weight-pain-insight');
+    if (!canvas) return;
+
+    const allWeights = getWeights();
+    const allCheckins = getCheckins();
+    const cutoff = new Date(Date.now() - currentWpRange * 86400000);
+
+    // Build date-keyed maps
+    const weightByDate = {};
+    allWeights.forEach(w => {
+      const ds = getDateStr(w.date);
+      if (new Date(w.date) >= cutoff) weightByDate[ds] = w.kg;
+    });
+    const painByDate = {};
+    allCheckins.forEach(c => {
+      if (new Date(c.date) >= cutoff && c.vas_pain != null) painByDate[c.date] = c.vas_pain;
+    });
+
+    // Find dates with both weight AND pain data
+    const allDates = [...new Set([...Object.keys(weightByDate), ...Object.keys(painByDate)])].sort();
+    const pairedDates = allDates.filter(d => weightByDate[d] != null && painByDate[d] != null);
+
+    if (pairedDates.length < 2) {
+      canvas.style.display = 'none';
+      if (emptyMsg) emptyMsg.style.display = 'flex';
+      if (insightEl) insightEl.textContent = '';
+      return;
+    }
+
+    canvas.style.display = 'block';
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    const labels = pairedDates.map(d => { const dt = new Date(d); return `${dt.getMonth()+1}/${dt.getDate()}`; });
+    const weightData = pairedDates.map(d => weightByDate[d]);
+    const painData = pairedDates.map(d => painByDate[d]);
+
+    if (weightPainChartInstance) weightPainChartInstance.destroy();
+    weightPainChartInstance = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: '体重 (kg)',
+            data: weightData,
+            borderColor: '#60a5fa',
+            backgroundColor: 'rgba(96,165,250,0.08)',
+            fill: false,
+            tension: 0.3,
+            pointBackgroundColor: '#60a5fa',
+            pointBorderColor: '#0a0e1a',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            borderWidth: 2.5,
+            yAxisID: 'y'
+          },
+          {
+            label: '痛み (VAS)',
+            data: painData,
+            borderColor: '#ff3b5c',
+            backgroundColor: 'rgba(255,59,92,0.08)',
+            fill: false,
+            tension: 0.3,
+            pointBackgroundColor: '#ff3b5c',
+            pointBorderColor: '#0a0e1a',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            borderWidth: 2.5,
+            borderDash: [6, 3],
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { ticks: { color: '#8892a8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: {
+            type: 'linear',
+            position: 'left',
+            ticks: { color: '#60a5fa', font: { size: 9 } },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            title: { display: true, text: 'kg', color: '#60a5fa', font: { size: 10 } }
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            min: 0,
+            max: 100,
+            ticks: { color: '#ff3b5c', font: { size: 9 } },
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: '痛み', color: '#ff3b5c', font: { size: 10 } }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#8892a8', font: { size: 10 }, usePointStyle: true, pointStyleWidth: 12 }
+          }
+        }
+      }
+    });
+
+    // Insight: simple correlation message
+    if (insightEl && pairedDates.length >= 3) {
+      const firstW = weightData[0], lastW = weightData[weightData.length - 1];
+      const firstP = painData[0], lastP = painData[painData.length - 1];
+      const wDiff = lastW - firstW;
+      const pDiff = lastP - firstP;
+      if (wDiff < -0.3 && pDiff < -3) {
+        insightEl.innerHTML = `<span style="color:var(--accent-green)">体重 ${Math.abs(wDiff).toFixed(1)}kg減 → 痛み ${Math.abs(pDiff).toFixed(0)}pt改善！減量の効果が出ています</span>`;
+      } else if (wDiff > 0.3 && pDiff > 3) {
+        insightEl.innerHTML = `<span style="color:var(--accent-red)">体重増と痛み悪化が連動しています。減量が鍵です</span>`;
+      } else {
+        insightEl.textContent = `${pairedDates.length}日分のデータを分析中。継続記録で相関が見えてきます`;
+      }
+    } else if (insightEl) {
+      insightEl.textContent = '';
+    }
+  }
+
   // ---- Weight Range Tabs ----
   document.querySelectorAll('.weight-range-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.weight-range-btn').forEach(b => b.classList.remove('active'));
+      // Determine which tab group this belongs to
+      const isWpTab = btn.dataset.wpRange != null;
+      const parent = btn.closest('.weight-range-tabs');
+      if (parent) parent.querySelectorAll('.weight-range-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderAnalyticsWeightChart(parseInt(btn.dataset.range, 10));
+      if (isWpTab) {
+        renderWeightPainChart(parseInt(btn.dataset.wpRange, 10));
+      } else {
+        renderAnalyticsWeightChart(parseInt(btn.dataset.range, 10));
+      }
     });
   });
 
@@ -1823,7 +2339,9 @@
                 headache: headache,
                 tags: tags,
                 dinnerType: dinnerType,
-                dinnerTime: dinnerTime
+                dinnerTime: dinnerTime,
+                caffeine: c['カフェイン杯数'] != null && c['カフェイン杯数'] !== '' ? parseInt(c['カフェイン杯数']) : null,
+                caffeineLastTime: c['最終カフェイン時間'] || null
               };
               newCheckins.push(entry);
             }

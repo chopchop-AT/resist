@@ -24,6 +24,18 @@
       <div class="app-subtitle">毎日の活力を、取り戻す。</div>
     </div>
 
+    <!-- Energy Battery -->
+    <div class="battery-card" id="battery-card">
+      <div class="battery-visual">
+        <div class="battery-icon" id="battery-icon">🔋</div>
+        <div class="battery-pct" id="battery-pct">--</div>
+        <div class="battery-unit">%</div>
+      </div>
+      <div class="battery-label" id="battery-label">朝チェックインでエネルギーを算出</div>
+      <div class="battery-bar-bg"><div class="battery-bar-fill" id="battery-bar-fill" style="width:0%"></div></div>
+      <div class="battery-debt" id="battery-debt" style="display:none"></div>
+    </div>
+
     <!-- Daily Score (自動算出) -->
     <div class="home-score-card" id="home-score-card">
       <div class="home-score-header">
@@ -31,19 +43,40 @@
         <span class="home-score-total" id="home-score-total">--</span>
         <span class="home-score-unit">/100</span>
       </div>
-      <div class="home-score-cats" id="home-score-cats">
+      <div class="home-score-cats" id="home-score-cats" style="grid-template-columns:repeat(5, 1fr);">
         <div class="home-score-cat"><span>睡眠</span><span id="home-cat-sleep">--</span></div>
-        <div class="home-score-cat"><span>習慣</span><span id="home-cat-lifestyle">--</span></div>
-        <div class="home-score-cat"><span>仕事</span><span id="home-cat-perf">--</span></div>
+        <div class="home-score-cat"><span>栄養</span><span id="home-cat-lifestyle">--</span></div>
+        <div class="home-score-cat"><span>管理</span><span id="home-cat-energy">--</span></div>
         <div class="home-score-cat"><span>回復</span><span id="home-cat-recovery">--</span></div>
+        <div class="home-score-cat"><span>仕事</span><span id="home-cat-perf">--</span></div>
       </div>
     </div>
 
-    <!-- Today's Progress -->
-    <div class="home-progress" id="home-progress">
-      <div class="home-progress-item" id="home-prog-checkin">☀️ 朝チェックイン</div>
-      <div class="home-progress-item" id="home-prog-checkout">🌙 夜チェックアウト</div>
-      <div class="home-progress-item" id="home-prog-rest">🌿 休養プラン</div>
+    <!-- Caffeine Deadline Alert -->
+    <div class="caffeine-alert" id="caffeine-alert" style="display:none">
+      <span>☕</span> カフェインデッドライン <strong>13:40</strong> — 睡眠の質を守るために
+    </div>
+
+    <!-- 7 Key Interventions Checklist -->
+    <div class="interventions-card" id="interventions-card">
+      <div class="interventions-header">
+        <span class="interventions-title">今日の必須介入</span>
+        <span class="interventions-count" id="interventions-count">0/7</span>
+      </div>
+      <div class="interventions-list" id="interventions-list">
+        <div class="intervention-item" id="iv-sleep"><span class="iv-icon">😴</span><span class="iv-label">7時間睡眠</span><span class="iv-status" id="iv-sleep-status">--</span></div>
+        <div class="intervention-item" id="iv-cpap"><span class="iv-icon">🫁</span><span class="iv-label">CPAP装着</span><span class="iv-status" id="iv-cpap-status">--</span></div>
+        <div class="intervention-item" id="iv-yuka"><span class="iv-icon">🍲</span><span class="iv-label">ゆかごはん</span><span class="iv-status" id="iv-yuka-status">--</span></div>
+        <div class="intervention-item" id="iv-suppl"><span class="iv-icon">💊</span><span class="iv-label">サプリ全摂取</span><span class="iv-status" id="iv-suppl-status">--</span></div>
+        <div class="intervention-item" id="iv-wall"><span class="iv-icon">📵</span><span class="iv-label">デジタルウォール</span><span class="iv-status" id="iv-wall-status">--</span></div>
+        <div class="intervention-item" id="iv-stretch"><span class="iv-icon">🧘</span><span class="iv-label">ストレッチ</span><span class="iv-status" id="iv-stretch-status">--</span></div>
+        <div class="intervention-item" id="iv-walk"><span class="iv-icon">🚶</span><span class="iv-label">朝散歩</span><span class="iv-status" id="iv-walk-status">--</span></div>
+      </div>
+    </div>
+
+    <!-- Evening Timeline -->
+    <div class="timeline-card" id="timeline-card" style="display:none">
+      <div class="timeline-list" id="timeline-list"></div>
     </div>
 
     <!-- SOS (縮小版) -->
@@ -139,6 +172,32 @@
           </div>
         </div>
 
+        <!-- サプリメント・トリニティ -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">💊 サプリメント・トリニティ</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">朝の分（今朝）</div>
+            <div class="suppl-check-row">
+              <button class="suppl-check-btn" data-suppl="morning_miyarisan" id="suppl-morning-m">ミヤリサン×3</button>
+              <button class="suppl-check-btn" data-suppl="morning_omega3" id="suppl-morning-o">オメガ3×2</button>
+            </div>
+          </div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">昨日の昼の分</div>
+            <div class="suppl-check-row">
+              <button class="suppl-check-btn" data-suppl="noon_miyarisan" id="suppl-noon-m">ミヤリサン×3</button>
+            </div>
+          </div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">昨夜の分（最重要 — 睡眠中の修復に直結）</div>
+            <div class="suppl-check-row">
+              <button class="suppl-check-btn" data-suppl="evening_miyarisan" id="suppl-eve-m">ミヤリサン×3</button>
+              <button class="suppl-check-btn" data-suppl="evening_omega3" id="suppl-eve-o">オメガ3×4</button>
+              <button class="suppl-check-btn" data-suppl="evening_vitc" id="suppl-eve-c">ビタミンC</button>
+            </div>
+          </div>
+        </div>
+
         <!-- 体重 -->
         <div class="checkin-section">
           <div class="checkin-section-title">⚖️ 今朝の体重</div>
@@ -207,6 +266,25 @@
               <button class="checkin-option-btn" data-value="before19">⏰ 19時前</button>
               <button class="checkin-option-btn" data-value="19to21">🕖 19-21時</button>
               <button class="checkin-option-btn" data-value="after21">🌙 21時以降</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">☕ 昨日のカフェイン摂取（コーヒー等）</div>
+            <div class="checkin-option-group" data-field="caffeine" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+              <button class="checkin-option-btn" data-value="0">0杯</button>
+              <button class="checkin-option-btn" data-value="1">1杯</button>
+              <button class="checkin-option-btn" data-value="2">2杯</button>
+              <button class="checkin-option-btn" data-value="3">3杯+</button>
+            </div>
+          </div>
+
+          <div class="checkin-rating-group" id="caffeine-time-group" style="display:none;">
+            <div class="checkin-rating-label">最後のカフェインは何時頃？</div>
+            <div class="checkin-option-group" data-field="caffeineLastTime" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+              <button class="checkin-option-btn" data-value="before13">☀️ 13時前</button>
+              <button class="checkin-option-btn" data-value="13to16">⚠️ 13-16時</button>
+              <button class="checkin-option-btn" data-value="after16">🚫 16時以降</button>
             </div>
           </div>
         </div>
@@ -354,6 +432,29 @@
           </div>
         </div>
 
+        <!-- デジタルウォール & 就寝時刻 -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">📵 デジタルウォール（21:30-22:30）</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">スマホ・PC・ブラウザを完全に断てましたか？</div>
+            <div class="checkin-option-group" data-field="digitalWall" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+              <button class="checkin-option-btn" data-value="2">✅ 完璧に守った</button>
+              <button class="checkin-option-btn" data-value="1">😐 一部破った</button>
+              <button class="checkin-option-btn" data-value="0">❌ 守れなかった</button>
+            </div>
+          </div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label">😴 今日の就寝予定時刻は？</div>
+            <div class="checkin-option-group" data-field="bedtime" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px;">
+              <button class="checkin-option-btn" data-value="before22" style="padding:8px 2px; font-size:0.7rem;">22時前</button>
+              <button class="checkin-option-btn" data-value="22to2230" style="padding:8px 2px; font-size:0.7rem;">22-22:30</button>
+              <button class="checkin-option-btn" data-value="2230to23" style="padding:8px 2px; font-size:0.7rem;">22:30-23</button>
+              <button class="checkin-option-btn" data-value="23to0" style="padding:8px 2px; font-size:0.7rem;">23-0時</button>
+              <button class="checkin-option-btn" data-value="after0" style="padding:8px 2px; font-size:0.7rem;">0時以降</button>
+            </div>
+          </div>
+        </div>
+
         <!-- 今日のふりかえり -->
         <div class="checkin-section">
           <div class="checkin-section-title">📝 今日のふりかえり</div>
@@ -376,6 +477,24 @@
 
           <div class="checkout-message-box">
             天満橋から南森町までの間、少しだけ目を閉じて深呼吸してみましょう。ここからは完全に「あなたの時間」です。
+          </div>
+        </div>
+
+        <!-- ストレッチ・プロトコル -->
+        <div class="checkin-section">
+          <div class="checkin-section-title">🧘 ストレッチ・プロトコル（入浴後に実施）</div>
+          <div class="checkin-rating-group">
+            <div class="checkin-rating-label" style="font-size:0.75rem;">タップで完了マーク。ヘルニアケアに最適化された7種目</div>
+            <div class="stretch-list" id="stretch-list">
+              <button class="stretch-item-btn" data-stretch="1">1. 腸腰筋リリース（半膝立ち）</button>
+              <button class="stretch-item-btn" data-stretch="2">2. ハムストリング（仰向け）</button>
+              <button class="stretch-item-btn" data-stretch="3">3. 梨状筋リリース（4の字）</button>
+              <button class="stretch-item-btn" data-stretch="4">4. 胸椎モビリティ（タオル）</button>
+              <button class="stretch-item-btn" data-stretch="5">5. 90/90 ヒップストレッチ</button>
+              <button class="stretch-item-btn" data-stretch="6">6. ふくらはぎ（壁押し）</button>
+              <button class="stretch-item-btn" data-stretch="7">7. 胸郭ストレッチ（呼吸仕上げ）</button>
+            </div>
+            <div class="stretch-progress" id="stretch-progress">完了: 0/7</div>
           </div>
         </div>
 
@@ -409,6 +528,33 @@
 
     <div class="checkin-scroll">
       
+      <!-- Phase Progress -->
+      <div class="analytics-section">
+        <div class="section-title">🗺️ 健康回復ジャーニー</div>
+        <div class="bg-card-style" id="phase-progress-container">
+          <div class="phase-item phase-done">
+            <div class="phase-header"><span class="phase-name">Phase 1: 抗炎症</span><span class="phase-badge">✅</span></div>
+            <div class="phase-bar-bg"><div class="phase-bar-fill" style="width:100%; background:var(--accent-green);"></div></div>
+            <div class="phase-desc">CPAP開始・サプリ三位一体・浮腫み消退</div>
+          </div>
+          <div class="phase-item phase-current">
+            <div class="phase-header"><span class="phase-name">Phase 2: 代謝改善</span><span class="phase-badge">🔄</span></div>
+            <div class="phase-bar-bg"><div class="phase-bar-fill" id="phase2-bar" style="width:0%; background:var(--accent-blue);"></div></div>
+            <div class="phase-desc" id="phase2-desc">目標: TG&lt;150, HbA1c&lt;5.4, 体重80kg以下</div>
+          </div>
+          <div class="phase-item">
+            <div class="phase-header"><span class="phase-name">Phase 3: 自動運転</span><span class="phase-badge">⏳</span></div>
+            <div class="phase-bar-bg"><div class="phase-bar-fill" style="width:0%;"></div></div>
+            <div class="phase-desc">体重78kg・血液正常化・基礎気分の上昇</div>
+          </div>
+          <div class="phase-item">
+            <div class="phase-header"><span class="phase-name">Phase 4: アンチエイジング</span><span class="phase-badge">⏳</span></div>
+            <div class="phase-bar-bg"><div class="phase-bar-fill" style="width:0%;"></div></div>
+            <div class="phase-desc">認知ピーク・疲れにくい身体</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Daily Scores -->
       <div class="analytics-section">
         <div class="section-title">🏆 デイリースコア（自動算出）</div>
@@ -455,6 +601,22 @@
           <canvas id="analytics-weight-chart"></canvas>
           <div class="weight-chart-empty" id="analytics-weight-empty" style="display:none">2日以上体重を記録するとグラフが表示されます</div>
         </div>
+      </div>
+
+      <!-- Weight-Pain Correlation -->
+      <div class="analytics-section">
+        <div class="section-title">📉 体重と痛みの相関</div>
+        <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:10px; line-height:1.5;">体重が減ると本当に痛みが和らぐのか — データで検証</div>
+        <div class="weight-range-tabs" id="wp-range-tabs">
+          <button class="weight-range-btn active" data-wp-range="7">1週間</button>
+          <button class="weight-range-btn" data-wp-range="30">1ヶ月</button>
+          <button class="weight-range-btn" data-wp-range="365">1年間</button>
+        </div>
+        <div class="weight-chart-container bg-card-style" style="height:220px; position:relative;">
+          <canvas id="weight-pain-chart"></canvas>
+          <div class="weight-chart-empty" id="weight-pain-empty" style="display:none">体重と痛みの両方のデータが2日以上必要です</div>
+        </div>
+        <div id="weight-pain-insight" style="margin-top:8px; font-size:0.78rem; color:var(--text-secondary); text-align:center; line-height:1.5;"></div>
       </div>
 
       <!-- Stats -->
@@ -587,6 +749,16 @@
       <div class="victory-detail" id="checkin-effect-detail">今日も自分と向き合えた！</div>
       <div class="victory-streak-msg" id="checkin-effect-streak"></div>
       <button class="victory-close-btn" id="btn-checkin-effect-close">ホームに戻る</button>
+    </div>
+  </div>
+
+  <div class="victory-effect" id="checkout-effect">
+    <div class="victory-celebration">
+      <div class="victory-emoji">🌙</div>
+      <div class="victory-title">GOOD NIGHT!</div>
+      <div class="victory-detail" id="checkout-effect-detail">今日もお疲れ様でした</div>
+      <div class="victory-streak-msg" id="checkout-effect-streak"></div>
+      <button class="victory-close-btn" id="btn-checkout-effect-close">ホームに戻る</button>
     </div>
   </div>
 
